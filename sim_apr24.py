@@ -52,18 +52,7 @@ pars = sc.objdict(
 )
 
 # Create the simulation
-sim = cv.Sim(datafile=data_path, popfile=pop_path)
-
-# Changing kids transmissability
-#sim = cv.Sim()
-#sim.initialize() # Create the population
-#children = sim.people.age<18 # Find people who are children
-#child_inds = sc.findinds(children) # Turn the boolean array into a list of indices
-#for lkey in sim.people.layer_keys(): # Loop over each layer
-#   child_contacts = np.isin(sim.people.contacts[lkey]['p1'], child_inds) # Find contacts where the source is a child
-#    child_contact_inds = sc.findinds(child_contacts) # Convert to indices
-#sim.people.contacts[lkey]['beta'][child_contact_inds] = 0.25 # MODIFY TRANSMISSION
-    #sim.run()
+sim = cv.Sim(pars=pars, datafile=data_path, popfile=pop_path)
 
 # Interventions
 
@@ -103,19 +92,23 @@ interventions = [h_beta, w_beta, s_beta, c_beta]
 # ]
 
 
-pars['interventions'] = interventions
-
-sim.update_pars(pars)
+sim.update_pars(interventions=interventions)
 
 
-if __name__ == '__main__':
-    sim.initialize() # Create the population
+# Changing kids' transmissability
+sim.initialize() # Create the population
+reduce_kids = False
+if reduce_kids:
+    print('Reducing transmission among kids')
     children = sim.people.age<18 # Find people who are children
     child_inds = sc.findinds(children) # Turn the boolean array into a list of indices
     for lkey in sim.people.layer_keys(): # Loop over each layer
         child_contacts = np.isin(sim.people.contacts[lkey]['p1'], child_inds) # Find contacts where the source is a child
         child_contact_inds = sc.findinds(child_contacts) # Convert to indices
-    sim.people.contacts[lkey]['beta'][child_contact_inds] *= 0.25 
+        sim.people.contacts[lkey]['beta'][child_contact_inds] = 0.25 # MODIFY TRANSMISSION
+        # sim.people.contacts[lkey]['beta'][:] = 0.0 # MODIFY TRANSMISSION
+
+if __name__ == '__main__':
     sim.run()
 
     if do_save:
