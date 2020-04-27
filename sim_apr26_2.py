@@ -12,7 +12,7 @@ cv.git_info('covasim_version.json')
 
 do_plot = 1
 do_save = 1
-do_show = 1
+do_show = 0
 verbose = 1
 seed    = 1
 
@@ -38,7 +38,8 @@ pop_scale = ratio
 pop_infected = 5000
 pop_type = 'hybrid'
 beta = 0.0188
-​ttq_day = 20
+ttq_day = 20
+#​ttq_day = 20
 #beta = 0.0188 when transmissibility is the same for all
 cons = {'h':3.0, 's':20, 'w':20, 'c':20}
 
@@ -104,11 +105,11 @@ t_delay = 0
 extra_tests = cv.test_prob(symp_prob=s_prob,
                             asymp_prob=a_prob, symp_quar_prob=q_prob, asymp_quar_prob=q_prob,
                             start_day=ttq_day, test_delay=t_delay)
-​
+
 # immediate isolation
 d_eff = 0.0
 isolation = cv.dynamic_pars({'diag_factor': {'days': ttq_day, 'vals': d_eff}})
-​
+
 # immediate home quarantine
 t_eff = 1.0
 t_time = 0
