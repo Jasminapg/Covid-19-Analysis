@@ -18,7 +18,7 @@ verbose = 1
 seed    = 1
 
 version   = 'v1'
-date      = '2020may22'
+date      = '2020may25'
 folder    = f'results_transmisibility100_TIonly_{date}'
 file_path = f'{folder}/phase_{version}' # Completed below
 data_path = 'UK_Covid_cases_may21.xlsx'
@@ -27,7 +27,7 @@ fig_path  = f'{file_path}.png'
 #ig_paths = [f'results/testing_scen_{i}.png' for i in range(3)]
 
 
-start_day = sc.readdate('2020-02-04')
+start_day = sc.readdate('2020-01-21') # start_day = sc.readdate('2020-01-21') or start_day = sc.readdate('2020-02-04')
 end_day   = sc.readdate('2021-05-31')
 n_days    = (end_day -start_day).days
 
@@ -40,7 +40,7 @@ ratio = int(total_pop/pop_size)
 pop_scale = ratio
 pop_type = 'hybrid'
 #100% transmissibility of kids also ps=0.0135 for May and June
-pop_infected = 15000
+pop_infected = 4500 # 4500 or 15000, depending on start date above
 beta = 0.00765
 cons = {'h':3.0, 's':20, 'w':20, 'c':20}
 #50% transmissibility of kids also ps=0.1 for May and June
@@ -271,10 +271,9 @@ if __name__ == '__main__':
     #msim = cv.MultiSim(n_runs=10)
     msim.run(n_runs=6) # Run with uncertainty
     msim.reduce() # "Reduce" the 10 sims into the statistical representation
-    results = msim.results # Use this instead of sim.results
-    msim.results['cum_deaths'].values.mean()
-    msim.results['cum_infectious'].values.mean()
-
+    # results = msim.results # Use this instead of sim.results
+    # msim.results['cum_deaths'].values.mean()
+    # msim.results['cum_infectious'].values.mean()
 
     #r0 = msim.results('r_eff')
     #msim.plot() # Use this instead of sim.plot
@@ -282,14 +281,30 @@ if __name__ == '__main__':
     #msim.plot_result('cum_infections',interval=30.5)
     #msim = cv.MultiSim([s1, s2])
     #msim.reduce()
-    msim.plot_result('r_eff', interval=60)
-    pl.savefig('R0Baseline.png')
-    msim.plot_result('cum_deaths', interval=60)
+
+
+
+    # Save the key figures
+
+    msim.plot_result('r_eff', interval=60, fig_args={'figsize':(12,7)}, axis_args={'left':0.15})
+    pl.xlim([10, 400]) # Trim off the beginning and end which are noisy
+    pl.axhline(1.0, c=[0.2, 0.1, 0.8], alpha=0.3, lw=3) # Add a line for the R_eff = 1 cutoff
+    pl.savefig('R_eff.png')
+
+    msim.plot_result('cum_deaths', interval=60, fig_args={'figsize':(12,7)}, axis_args={'left':0.15})
     pl.savefig('Deaths.png')
-    msim.plot_result('cum_diagnoses', interval=60)
+
+    msim.plot_result('new_infections', interval=60, fig_args={'figsize':(12,7)}, axis_args={'left':0.15})
+    pl.savefig('Infections.png')
+
+    msim.plot_result('cum_diagnoses', interval=60, fig_args={'figsize':(12,7)}, axis_args={'left':0.15})
     pl.savefig('Diagnoses.png')
-    msim.plot_result('cum_tests')
-    pl.savefig('Test.png')
+
+
+
+
+    # msim.plot_result('cum_tests')
+    # pl.savefig('Test.png')
     ##to_plot[‘Health outcomes’].remove(‘cum_severe’)
     #sim.plot()
     #pl.savefig('Cases.png')
@@ -303,13 +318,13 @@ if __name__ == '__main__':
        # fig = msim.plot(to_plot=to_plot, do_save=do_save, do_show=do_show, fig_path=fig_path, interval=60)
 
 
-    if do_save:
-        msim.save(f'{file_path}.sim', keep_people=True)
+    # if do_save:
+    #     msim.save(f'{file_path}.sim', keep_people=True)
 
-    if do_plot:
-        to_plot = cv.get_sim_plots()
-        to_plot['Health outcomes'].remove('cum_severe')
-        fig = msim.plot(to_plot=to_plot, do_save=do_save, do_show=do_show, fig_path=fig_path, interval=60)
+    # if do_plot:
+    #     for reskey in ['new_infections', 'cum_deaths']:
+    #         fig = msim.plot(to_plot=[reskey], fig_args={'figsize':(12,7)}, do_save=do_save, fig_path=fig_path, interval=60)
+    #         pl.title('')
 
     #to_plot = cv.get_sim_plots()
     #to_plot['Health outcomes'].remove('cum_severe')
