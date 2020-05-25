@@ -27,7 +27,7 @@ fig_path  = f'{file_path}.png'
 #ig_paths = [f'results/testing_scen_{i}.png' for i in range(3)]
 
 
-start_day = sc.readdate('2020-01-21')
+start_day = sc.readdate('2020-02-04')
 end_day   = sc.readdate('2021-05-31')
 n_days    = (end_day -start_day).days
 
@@ -40,8 +40,8 @@ ratio = int(total_pop/pop_size)
 pop_scale = ratio
 pop_type = 'hybrid'
 #100% transmissibility of kids also ps=0.0135 for May and June
-pop_infected = 4500
-beta = 0.00485
+pop_infected = 15000
+beta = 0.00765
 cons = {'h':3.0, 's':20, 'w':20, 'c':20}
 #50% transmissibility of kids also ps=0.1 for May and June
 #pop_infected = 5000
@@ -66,20 +66,20 @@ msim = cv.MultiSim(base_sim=sim) # Create using your existing sim as the base
 
 # Interventions
 
-#opening and closing schools intervention changing the h,s,w,c values and ti_start to 
+#opening and closing schools intervention changing the h,s,w,c values and ti_start to
 #account for changes in Table 1 in the ms
 #baseline scenario
 
 # Create the baseline simulation
 
 #interventions = []
-#intervention of some testing (tc) starts on 19th March and we run until 1st April when it increases 
+#intervention of some testing (tc) starts on 19th March and we run until 1st April when it increases
 tc_start = '2020-03-16'
 tc_day = (sc.readdate(tc_start)-start_day).days
 #intervention of some testing (te) starts on 1st April and we run until 1st May when it increases
 te_start = '2020-04-01'
 te_day = (sc.readdate(tc_start)-start_day).days
-#intervention of some testing (tt) starts on 15th May 
+#intervention of some testing (tt) starts on 15th May
 tt_start = '2020-05-01'
 tt_day = (sc.readdate(tt_start)-start_day).days
 #intervention of testing and tracing and isolation (tti) starts on 1st June
@@ -89,7 +89,7 @@ tti_day= (sc.readdate(tti_start)-start_day).days
 ti_start = '2021-04-17'
 ti_day   = (sc.readdate(ti_start)-start_day).days
 #change parameters here for difefrent schools opening strategies with society opening
-#June opening with society opening 
+#June opening with society opening
 beta_days      = ['2020-02-14', '2020-03-16', '2020-03-23', '2020-04-30', '2020-05-15', '2020-06-08', '2020-07-01', '2020-07-22', '2020-09-02', '2020-10-28', '2020-11-01', '2020-12-23', '2021-01-03', '2021-02-17', '2021-02-21', '2021-04-06', ti_start]
 beta_days      = [(sc.readdate(day)-start_day).days for day in beta_days]
 h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.00, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00]
@@ -102,7 +102,7 @@ c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.80, 0.80, 0.50, 0.90, 0.50, 0.
 #w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40]
 #c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40]
 
-#September opening with society opening 
+#September opening with society opening
 #h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.29, 1.29, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00]
 #s_beta_changes = [1.00, 0.90, 0.02, 0.02, 0.02, 0.02, 0.02, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 1.00]
 #w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.20, 0.30, 0.30, 0.70, 0.50, 0.70, 0.50, 0.70, 0.50, 0.70, 0.50, 0.70]
@@ -113,7 +113,7 @@ c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.80, 0.80, 0.50, 0.90, 0.50, 0.
 #w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.20, 0.30, 0.30, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40]
 #c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.20, 0.30, 0.30, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40]
 
-#Phased opening with society opening 
+#Phased opening with society opening
 #h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.00, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00]
 #s_beta_changes = [1.00, 0.90, 0.02, 0.02, 0.02, 0.25, 0.70, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 1.00]
 #w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.70, 0.50, 0.70, 0.50, 0.70, 0.50, 0.70, 0.50, 0.70, 0.50, 0.70]
@@ -124,7 +124,7 @@ c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.80, 0.80, 0.50, 0.90, 0.50, 0.
 #w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40]
 #c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40]
 
-#Phased-delayed opening with society opening 
+#Phased-delayed opening with society opening
 #h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00]
 #s_beta_changes = [1.00, 0.90, 0.02, 0.02, 0.02, 0.02, 0.70, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 1.00]
 #w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.20, 0.70, 0.50, 0.70, 0.50, 0.70, 0.50, 0.70, 0.50, 0.70, 0.50, 0.70]
@@ -150,7 +150,7 @@ sim.update_pars(interventions=interventions)
 #tests from data until 14th May
 #daily_tests = sim.data['new_tests'] #test from data
 #daily_tests = 30000
-#symp_test = 1#odds ratio of symptomatic person testing 
+#symp_test = 1#odds ratio of symptomatic person testing
 #tests = cv.test_num(daily_tests=daily_tests, symp_test=10, start_day=tc_day, end_day=tt_day)
 #assumption on testing between 14th May and 1st June
 #daily_tests2 = 100000
@@ -170,6 +170,9 @@ a_prob = 0.0
 #a_prob_june =0.0135
 q_prob = 0.0
 t_delay = 1.0
+
+iso_vals = [{k:0.1 for k in 'hswc'}]
+
 march_tests = cv.test_prob(symp_prob=s_prob_march,
                             asymp_prob=a_prob, symp_quar_prob=q_prob, asymp_quar_prob=q_prob,
                             start_day=tc_day, end_day=te_day, test_delay=t_delay)
@@ -183,7 +186,7 @@ june_tests_symp = cv.test_prob(symp_prob=s_prob_june,
                           asymp_prob=a_prob, symp_quar_prob=q_prob, asymp_quar_prob=q_prob,
                           start_day=tti_day, test_delay=t_delay)
 #from the onset (te_day) people with diagnosed positive are assumed likely to transmit as are immediately isolated so their transmission reduced by 90%
-isolation = cv.dynamic_pars({'diag_factor': {'days': te_day, 'vals': 0.1}}) #starting day tt make diagnosed people d_eff less likely to transmis
+isolation = cv.dynamic_pars({'iso_factor': {'days': te_day, 'vals': iso_vals}}) #starting day tt make diagnosed people d_eff less likely to transmis
 
 #tracing in june
 #t_eff_june = 0.0
@@ -192,7 +195,7 @@ isolation = cv.dynamic_pars({'diag_factor': {'days': te_day, 'vals': 0.1}}) #sta
 #ttq_june = cv.contact_tracing(trace_probs=t_probs_june, trace_time=trace_d, start_day=tti_day)
 
 interventions += [
-     #h_beta, w_beta, s_beta, c_beta, 
+     #h_beta, w_beta, s_beta, c_beta,
      #cv.test_num(daily_tests=daily_tests, symp_test=10, start_day=tc_day, end_day=tt_day),
      #cv.test_num(daily_tests=daily_tests2, symp_test=10, start_day=tt_day, end_day=tti_day),
      #cv.test_num(daily_tests=daily_tests3, symp_test=10, start_day=tti_day),
@@ -208,18 +211,20 @@ interventions += [
      cv.test_prob(symp_prob=s_prob_june,
                           asymp_prob=a_prob, symp_quar_prob=q_prob, asymp_quar_prob=q_prob,
                            start_day=tti_day, test_delay=t_delay),
-     cv.dynamic_pars({'diag_factor': {'days': te_day, 'vals': 0.1}}),
+     cv.dynamic_pars({'iso_factor': {'days': te_day, 'vals': iso_vals}}),
      #cv.dynamic_pars({'asymp_factor': {'days': tt_day, 'vals': 2.0}}),
      #cv.contact_tracing(trace_probs=t_probs_may, trace_time=trace_d, start_day=tt_day),
      #cv.contact_tracing(trace_probs=t_probs_june, trace_time=trace_d, start_day=tti_day),
-     #cv.dynamic_pars({'asymp_factor': {'days': tti_day, 'vals': 1.0}}) 
+     #cv.dynamic_pars({'asymp_factor': {'days': tti_day, 'vals': 1.0}})
      #cv.contact_tracing(trace_probs=t_probs_june, trace_time=trace_d, start_day=tti_day)
    ]
 pars['interventions'] = [march_tests, april_tests, may_tests, june_tests_symp, isolation]
 sim.update_pars(interventions=interventions)
+for intervention in sim['interventions']:
+    intervention.do_plot = False
 
 
-#population-wide testing and tracing strategy from June 
+#population-wide testing and tracing strategy from June
 #testing in june
 #s_prob_june_2 = 0.0
 #a_prob_june_2 = 0.15
@@ -228,7 +233,7 @@ sim.update_pars(interventions=interventions)
 #june_tests_extra = cv.test_prob(symp_prob=s_prob_june_2,
  #                        asymp_prob=a_prob_june_2, symp_quar_prob=q_prob_june, asymp_quar_prob=q_prob_june,
   #                         start_day=tti_day, test_delay=t_delay)
-#isolation_june_2 = cv.dynamic_pars({'diag_factor': {'days': tti_day, 'vals': 0.1}}) #starting day tt make diagnosed people d_eff less likely to transmis
+#isolation_june_2 = cv.dynamic_pars({'iso_factor': {'days': tti_day, 'vals': iso_vals}}) #starting day tt make diagnosed people d_eff less likely to transmis
 
 #tracing in june
 #t_eff_june = 0.4
@@ -242,7 +247,7 @@ sim.update_pars(interventions=interventions)
   #                       asymp_prob=a_prob_june_2, symp_quar_prob=q_prob_june, asymp_quar_prob=q_prob_june,
    #                        start_day=tti_day, test_delay=t_delay),
     # cv.contact_tracing(trace_probs=t_probs_june, trace_time=trace_d, start_day=tti_day),
-     #cv.dynamic_pars({'diag_factor': {'days': tti_day, 'vals': 0.1}})    
+     #cv.dynamic_pars({'iso_factor': {'days': tti_day, 'vals': iso_vals}})
   #]
 #pars['interventions'] = [june_tests_extra, ttq_june_2, isolation_june_2]
 #sim.update_pars(interventions=interventions)
@@ -260,17 +265,17 @@ if reduce_kids:
         child_contact_inds = sc.findinds(child_contacts) # Convert to indices
         sim.people.contacts[lkey]['beta'][child_contact_inds] = 1.0 # MODIFY TRANSMISSION
         #sim.people.contacts[lkey]['beta'][:] = 0.0 # MODIFY TRANSMISSION
-  
+
 
 if __name__ == '__main__':
     #msim = cv.MultiSim(n_runs=10)
-    msim.run(n_runs=1) # Run with uncertainty
+    msim.run(n_runs=6) # Run with uncertainty
     msim.reduce() # "Reduce" the 10 sims into the statistical representation
     results = msim.results # Use this instead of sim.results
     msim.results['cum_deaths'].values.mean()
     msim.results['cum_infectious'].values.mean()
-    
-    
+
+
     #r0 = msim.results('r_eff')
     #msim.plot() # Use this instead of sim.plot
     #msim.plot_result('cum_deaths', interval=30.5)
@@ -291,21 +296,21 @@ if __name__ == '__main__':
     #sim.to_excel('Baseline.xlsx')
     #msim.plot_result('cum_diagnoses')
     #pl.savefig('Diagnoses.png')
-    
+
     #if do_plot:
      #   to_plot = cv.get_sim_plots()
       #  to_plot['Health outcomes'].remove('cum_severe')
        # fig = msim.plot(to_plot=to_plot, do_save=do_save, do_show=do_show, fig_path=fig_path, interval=60)
-    
-    
+
+
     if do_save:
         msim.save(f'{file_path}.sim', keep_people=True)
-        
+
     if do_plot:
         to_plot = cv.get_sim_plots()
         to_plot['Health outcomes'].remove('cum_severe')
         fig = msim.plot(to_plot=to_plot, do_save=do_save, do_show=do_show, fig_path=fig_path, interval=60)
-        
+
     #to_plot = cv.get_sim_plots()
     #to_plot['Health outcomes'].remove('cum_severe')
     #sim.plot(to_plot=to_plot)
@@ -315,4 +320,3 @@ if __name__ == '__main__':
         #to_plot['Health outcomes'].remove('cum_severe')
         #sim.plot(to_plot=to_plot)
     #    fig = msim.plot(to_plot=to_plot,do_save=do_save, do_show=do_show, fig_path=fig_path, interval=60)
-    
