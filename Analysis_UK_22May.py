@@ -289,15 +289,19 @@ if __name__ == '__main__':
     msim.plot_result('r_eff', interval=60, fig_args={'figsize':(12,7)}, axis_args={'left':0.15})
     pl.xlim([10, 400]) # Trim off the beginning and end which are noisy
     pl.axhline(1.0, c=[0.2, 0.1, 0.8], alpha=0.3, lw=3) # Add a line for the R_eff = 1 cutoff
+    pl.title('')
     pl.savefig('R_eff.png')
 
     msim.plot_result('cum_deaths', interval=60, fig_args={'figsize':(12,7)}, axis_args={'left':0.15})
+    pl.title('')
     pl.savefig('Deaths.png')
 
     msim.plot_result('new_infections', interval=60, fig_args={'figsize':(12,7)}, axis_args={'left':0.15})
+    pl.title('')
     pl.savefig('Infections.png')
 
     msim.plot_result('cum_diagnoses', interval=60, fig_args={'figsize':(12,7)}, axis_args={'left':0.15})
+    pl.title('')
     pl.savefig('Diagnoses.png')
 
 
