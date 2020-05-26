@@ -8,7 +8,7 @@ import covasim as cv
 import pylab as pl
 
 # Check version
-cv.check_version('1.3.0')
+cv.check_version('1.3.2', die=True)
 cv.git_info('covasim_version.json')
 
 do_plot = 1
@@ -272,10 +272,13 @@ if reduce_kids:
 
 if __name__ == '__main__':
     #msim = cv.MultiSim(n_runs=10)
-    msim.run(n_runs=8) # Run with uncertainty
-    msim.reduce() # "Reduce" the 10 sims into the statistical representation
-    
-   
+    msim.run(n_runs=8, keep_people=True) # Run with uncertainty
+
+    # Recalculate R_eff with a larger window
+    for sim in msim.sims:
+        sim.compute_r_eff(smoothing=10)
+    msim.reduce() # "Reduce" the sims into the statistical representation
+
     results = msim.results # Use this instead of sim.results
     #msim.combine()
     #msim.results['cum_deaths'].values.mean()
@@ -293,7 +296,7 @@ if __name__ == '__main__':
     # Save the key figures
 
     msim.plot_result('r_eff', interval=60, fig_args={'figsize':(12,7)}, axis_args={'left':0.15})
-    pl.xlim([10, 496]) # Trim off the beginning and end which are noisy
+    # pl.xlim([10, 496]) # Trim off the beginning and end which are noisy
     pl.axhline(1.0, c=[0.2, 0.1, 0.8], alpha=0.3, lw=3) # Add a line for the R_eff = 1 cutoff
     pl.title('')
     pl.savefig('R_eff.png')
