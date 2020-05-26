@@ -27,7 +27,7 @@ fig_path  = f'{file_path}.png'
 #ig_paths = [f'results/testing_scen_{i}.png' for i in range(3)]
 
 
-start_day = sc.readdate('2020-01-21') # start_day = sc.readdate('2020-01-21') or start_day = sc.readdate('2020-02-04')
+start_day = sc.readdate('2020-01-21')
 end_day   = sc.readdate('2021-05-31')
 n_days    = (end_day -start_day).days
 
@@ -40,7 +40,7 @@ ratio = int(total_pop/pop_size)
 pop_scale = ratio
 pop_type = 'hybrid'
 #100% transmissibility of kids also ps=0.0135 for May and June
-pop_infected = 4500 # 4500 or 15000, depending on start date above
+pop_infected = 4000
 #beta=0.00485
 beta = 0.00764
 cons = {'h':3.0, 's':20, 'w':20, 'c':20}
@@ -277,6 +277,7 @@ if __name__ == '__main__':
     # Recalculate R_eff with a larger window
     for sim in msim.sims:
         sim.compute_r_eff(smoothing=10)
+
     msim.reduce() # "Reduce" the sims into the statistical representation
 
     results = msim.results # Use this instead of sim.results

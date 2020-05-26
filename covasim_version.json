@@ -1,9 +1,9 @@
 {
   "covasim": {
     "version": "1.3.2",
-    "branch": "updates-may25c",
-    "hash": "62e6d5b",
-    "date": "2020-05-26T04:05:26-07:00"
+    "branch": "develop",
+    "hash": "70642e6",
+    "date": "2020-05-25T19:10:15-07:00"
   },
   "called_by": {
     "branch": "Git branch N/A",
