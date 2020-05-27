@@ -28,7 +28,7 @@ fig_path  = f'{file_path}.png'
 
 
 start_day = '2020-01-21'
-end_day   = '2020-05-31'
+end_day   = '2021-05-31'
 
 # Set the parameters
 #quar_eff = 0.8
@@ -41,7 +41,7 @@ pop_type = 'hybrid'
 #100% transmissibility of kids also ps=0.0135 for May and June
 pop_infected = 4000
 #beta=0.00485
-beta = 0.00764
+beta = 0.00825
 cons = {'h':3.0, 's':20, 'w':20, 'c':20}
 #50% transmissibility of kids also ps=0.1 for May and June
 #pop_infected = 5000
@@ -55,7 +55,7 @@ pars = sc.objdict(
     pop_type     = pop_type,
     start_day    = start_day,
     end_day      = end_day,
-    asymp_factor = 1.9,
+    asymp_factor = 1.0,
     beta         = beta,
     contacts     = cons,
     rescale      = True,
@@ -75,15 +75,15 @@ sim = cv.Sim(pars=pars, datafile=data_path, popfile=pop_path, location='uk')
 
 #interventions = []
 #intervention of some testing (tc) starts on 19th March and we run until 1st April when it increases
-tc_day = '2020-03-16'
+tc_day = sim.day('2020-03-16')
 #intervention of some testing (te) starts on 1st April and we run until 1st May when it increases
-te_day = '2020-04-01'
+te_day = sim.day('2020-04-01')
 #intervention of some testing (tt) starts on 15th May
-tt_day = '2020-05-01'
+tt_day = sim.day('2020-05-01')
 #intervention of testing and tracing and isolation (tti) starts on 1st June
-tti_day= '2020-06-01'
+tti_day= sim.day('2020-06-01')
 #schools interventions (ti) start
-ti_day   = '2021-04-17'
+ti_day   = sim.day('2021-04-17')
 #change parameters here for difefrent schools opening strategies with society opening
 #June opening with society opening
 beta_days      = ['2020-02-14', '2020-03-16', '2020-03-23', '2020-04-30', '2020-05-15', '2020-06-08', '2020-07-01', '2020-07-22', '2020-09-02', '2020-10-28', '2020-11-01', '2020-12-23', '2021-01-03', '2021-02-17', '2021-02-21', '2021-04-06', ti_day]
@@ -168,20 +168,13 @@ t_delay = 1.0
 
 iso_vals = [{k:0.1 for k in 'hswc'}]
 
-march_tests = cv.test_prob(symp_prob=s_prob_march,
-                            asymp_prob=a_prob, symp_quar_prob=q_prob, asymp_quar_prob=q_prob,
-                            start_day=tc_day, end_day=te_day, test_delay=t_delay)
-april_tests = cv.test_prob(symp_prob=s_prob_april,
-                           asymp_prob=a_prob, symp_quar_prob=q_prob, asymp_quar_prob=q_prob,
-                           start_day=te_day, end_day=tt_day, test_delay=t_delay)
-may_tests = cv.test_prob(symp_prob=s_prob_may,
-                          asymp_prob=0.00075, symp_quar_prob=q_prob, asymp_quar_prob=q_prob,
-                           start_day=tt_day, end_day=sim.day(tti_day)-1, test_delay=t_delay)
-june_tests_symp = cv.test_prob(symp_prob=s_prob_june,
-                          asymp_prob=0.00075, symp_quar_prob=q_prob, asymp_quar_prob=q_prob,
-                          start_day=tti_day, test_delay=t_delay)
-#from the onset (te_day) people with diagnosed positive are assumed likely to transmit as are immediately isolated so their transmission reduced by 90%
-isolation = cv.dynamic_pars({'iso_factor': {'days': sim.day(te_day), 'vals': iso_vals}}) #starting day tt make diagnosed people d_eff less likely to transmis
+# WARNING -- these are never used, they get overwritten
+# march_tests     = cv.test_prob(symp_prob=s_prob_march, asymp_prob=0.00030, symp_quar_prob=q_prob, start_day=tc_day, end_day=te_day, test_delay=t_delay)
+# april_tests     = cv.test_prob(symp_prob=s_prob_april, asymp_prob=0.00050, symp_quar_prob=q_prob, asymp_quar_prob=q_prob, start_day=te_day, end_day=tt_day, test_delay=t_delay)
+# may_tests       = cv.test_prob(symp_prob=s_prob_may,   asymp_prob=0.00075, symp_quar_prob=q_prob, asymp_quar_prob=q_prob, start_day=tt_day, end_day=tti_day, test_delay=t_delay)
+# june_tests_symp = cv.test_prob(symp_prob=s_prob_june,  asymp_prob=0.00075, symp_quar_prob=q_prob, asymp_quar_prob=q_prob, start_day=tti_day, test_delay=t_delay)
+# #from the onset (te_day) people with diagnosed positive are assumed likely to transmit as are immediately isolated so their transmission reduced by 90%
+# isolation = cv.dynamic_pars({'iso_factor': {'days': te_day, 'vals': iso_vals}}) #starting day tt make diagnosed people d_eff less likely to transmis
 
 #tracing in june
 #t_eff_june = 0.0
@@ -194,26 +187,20 @@ interventions += [
      #cv.test_num(daily_tests=daily_tests, symp_test=10, start_day=tc_day, end_day=tt_day),
      #cv.test_num(daily_tests=daily_tests2, symp_test=10, start_day=tt_day, end_day=tti_day),
      #cv.test_num(daily_tests=daily_tests3, symp_test=10, start_day=tti_day),
-     cv.test_prob(symp_prob=s_prob_march,
-                          asymp_prob=a_prob, symp_quar_prob=q_prob, asymp_quar_prob=q_prob,
-                           start_day=tc_day, end_day=te_day, test_delay=t_delay),
-     cv.test_prob(symp_prob=s_prob_april,
-                          asymp_prob=a_prob, symp_quar_prob=q_prob, asymp_quar_prob=q_prob,
-                           start_day=te_day, end_day=tt_day, test_delay=t_delay),
-     cv.test_prob(symp_prob=s_prob_may,
-                            asymp_prob=0.00075, symp_quar_prob=q_prob, asymp_quar_prob=q_prob,
-                            start_day=tt_day, end_day=sim.day(tti_day)-1, test_delay=t_delay),
-     cv.test_prob(symp_prob=s_prob_june,
-                          asymp_prob=0.00075, symp_quar_prob=q_prob, asymp_quar_prob=q_prob,
-                           start_day=tti_day, test_delay=t_delay),
-     cv.dynamic_pars({'iso_factor': {'days': sim.day(te_day), 'vals': iso_vals}}),
-     #cv.dynamic_pars({'asymp_factor': {'days': sim.day(tt_day), 'vals': 2.0}}),
+     cv.test_prob(symp_prob=s_prob_march, asymp_prob=0.00030, symp_quar_prob=q_prob, asymp_quar_prob=q_prob, start_day=tc_day, end_day=te_day-1, test_delay=t_delay),
+     cv.test_prob(symp_prob=s_prob_april, asymp_prob=0.00050, symp_quar_prob=q_prob, asymp_quar_prob=q_prob, start_day=te_day, end_day=tt_day-1, test_delay=t_delay),
+     cv.test_prob(symp_prob=s_prob_may,   asymp_prob=0.00075, symp_quar_prob=q_prob, asymp_quar_prob=q_prob, start_day=tt_day, end_day=tti_day-1, test_delay=t_delay),
+     cv.test_prob(symp_prob=s_prob_june,  asymp_prob=0.00075, symp_quar_prob=q_prob, asymp_quar_prob=q_prob, start_day=tti_day, test_delay=t_delay),
+     cv.dynamic_pars({'iso_factor': {'days': te_day, 'vals': iso_vals}}),
+     #cv.dynamic_pars({'asymp_factor': {'days': tt_day, 'vals': 2.0}}),
      #cv.contact_tracing(trace_probs=t_probs_may, trace_time=trace_d, start_day=tt_day),
      #cv.contact_tracing(trace_probs=t_probs_june, trace_time=trace_d, start_day=tti_day),
-     #cv.dynamic_pars({'asymp_factor': {'days': sim.day(tti_day), 'vals': 1.0}})
+     #cv.dynamic_pars({'asymp_factor': {'days': tti_day, 'vals': 1.0}})
      #cv.contact_tracing(trace_probs=t_probs_june, trace_time=trace_d, start_day=tti_day)
    ]
-pars['interventions'] = [march_tests, april_tests, may_tests, june_tests_symp, isolation]
+
+
+# pars['interventions'] = [march_tests, april_tests, may_tests, june_tests_symp, isolation] # WARNING -- this gets overwritten on the next line
 sim.update_pars(interventions=interventions)
 for intervention in sim['interventions']:
     intervention.do_plot = False
@@ -228,7 +215,7 @@ for intervention in sim['interventions']:
 #june_tests_extra = cv.test_prob(symp_prob=s_prob_june_2,
  #                        asymp_prob=a_prob_june_2, symp_quar_prob=q_prob_june, asymp_quar_prob=q_prob_june,
   #                         start_day=tti_day, test_delay=t_delay)
-#isolation_june_2 = cv.dynamic_pars({'iso_factor': {'days': sim.day(tti_day), 'vals': iso_vals}}) #starting day tt make diagnosed people d_eff less likely to transmis
+#isolation_june_2 = cv.dynamic_pars({'iso_factor': {'days': tti_day, 'vals': iso_vals}}) #starting day tt make diagnosed people d_eff less likely to transmis
 
 #tracing in june
 #t_eff_june = 0.0
@@ -242,7 +229,7 @@ for intervention in sim['interventions']:
   #                       asymp_prob=a_prob_june_2, symp_quar_prob=q_prob_june, asymp_quar_prob=q_prob_june,
    #                        start_day=tti_day, test_delay=t_delay),
     # cv.contact_tracing(trace_probs=t_probs_june, trace_time=trace_d, start_day=tti_day),
-     #cv.dynamic_pars({'iso_factor': {'days': sim.day(tti_day), 'vals': iso_vals}})
+     #cv.dynamic_pars({'iso_factor': {'days': tti_day, 'vals': iso_vals}})
  # ]
 #pars['interventions'] = [ttq_june_2, isolation_june_2, june_tests_extra]
 #sim.update_pars(interventions=interventions)
@@ -265,8 +252,11 @@ if reduce_kids:
 
 
 if __name__ == '__main__':
+
+    NOISE = 0.00
+
     msim = cv.MultiSim(base_sim=sim) # Create using your existing sim as the base
-    msim.run(n_runs=8, keep_people=True) # Run with uncertainty
+    msim.run(reseed=True, noise=NOISE, n_runs=8, keep_people=True) # Run with uncertainty
 
     # Recalculate R_eff with a larger window
     for sim in msim.sims:
@@ -291,15 +281,15 @@ if __name__ == '__main__':
     # Save the key figures
 
     plot_customizations = dict(
-        interval=90,
-        fig_args={'figsize':(14,8)},
-        axis_args={'left':0.15},
-        dateformat='%Y/%m'
+        interval   = 90, # Number of days between tick marks
+        dateformat = '%Y/%m', # Date format for ticks
+        fig_args   = {'figsize':(14,8)}, # Size of the figure (x and y)
+        axis_args  = {'left':0.15}, # Space on left side of plot
         )
 
     msim.plot_result('r_eff', **plot_customizations)
     # pl.xlim([10, 496]) # Trim off the beginning and end which are noisy
-    pl.axhline(1.0, c=[0.2, 0.1, 0.8], alpha=0.3, lw=3) # Add a line for the R_eff = 1 cutoff
+    pl.axhline(1.0, linestyle='--', c=[0.8,0.4,0.4], alpha=0.8, lw=4) # Add a line for the R_eff = 1 cutoff
     pl.title('')
     pl.savefig('R_eff.png')
 
