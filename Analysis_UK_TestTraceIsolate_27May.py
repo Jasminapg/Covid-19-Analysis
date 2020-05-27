@@ -72,28 +72,28 @@ ti_day = sim.day('2021-04-17') #schools interventions (ti) start
 beta_days = ['2020-02-14', '2020-03-16', '2020-03-23', '2020-04-30', '2020-05-15', '2020-06-08', '2020-07-01', '2020-07-22', '2020-09-02', '2020-10-28', '2020-11-01', '2020-12-23', '2021-01-03', '2021-02-17', '2021-02-21', '2021-04-06', ti_day]
 
 #June opening with society opening
-if scenario in ['jun-opening', 'sep-opening', 'phased', 'phased-delayed'] and scenario == 'jun-opening':
+if scenario == 'jun-opening':
     h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.00, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00]
     s_beta_changes = [1.00, 0.90, 0.02, 0.02, 0.02, 0.80, 0.80, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 1.00]
     w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.70, 0.70, 0.50, 0.70, 0.50, 0.70, 0.50, 0.70, 0.50, 0.70, 0.50, 0.70]
     c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.80, 0.80, 0.70, 0.90, 0.70, 0.90, 0.70, 0.90, 0.70, 0.90, 0.70, 0.90]
 
 #September opening with society opening
-elif scenario in ['jun-opening', 'sep-opening', 'phased', 'phased-delayed'] and scenario == 'sep-opening':
+elif scenario == 'sep-opening':
     h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.29, 1.29, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00]
     s_beta_changes = [1.00, 0.90, 0.02, 0.02, 0.02, 0.02, 0.02, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 1.00]
     w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.20, 0.40, 0.40, 0.70, 0.50, 0.70, 0.50, 0.70, 0.50, 0.70, 0.50, 0.70]
     c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.20, 0.40, 0.40, 0.90, 0.70, 0.90, 0.70, 0.90, 0.70, 0.90, 0.70, 0.90]
 
 #Phased opening with society opening
-elif scenario in ['jun-opening', 'sep-opening', 'phased', 'phased-delayed'] and scenario == 'phased':
+elif scenario == 'phased':
     h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.00, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00]
     s_beta_changes = [1.00, 0.90, 0.02, 0.02, 0.02, 0.25, 0.70, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 1.00]
     w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.70, 0.50, 0.70, 0.50, 0.70, 0.50, 0.70, 0.50, 0.70, 0.50, 0.70]
     c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.70, 0.70, 0.90, 0.70, 0.90, 0.70, 0.90, 0.70, 0.90, 0.70, 0.90]
 
 #Phased-delayed opening with society opening
-elif scenario in ['jun-opening', 'sep-opening', 'phased', 'phased-delayed'] and scenario == 'phased-delayed':
+elif scenario == 'phased-delayed':
     h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00]
     s_beta_changes = [1.00, 0.90, 0.02, 0.02, 0.02, 0.02, 0.70, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 1.00]
     w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.20, 0.70, 0.50, 0.70, 0.50, 0.70, 0.50, 0.70, 0.50, 0.70, 0.50, 0.70]
@@ -111,7 +111,7 @@ c_beta = cv.change_beta(days=beta_days, changes=c_beta_changes, layers='c')
 #next line to save the intervention
 interventions = [h_beta, w_beta, s_beta, c_beta]
 
-if tti_scen in ['none', '40%', '80%'] and tti_scen == 'none':
+if tti_scen == 'none':
 
     # Tracing and enhanced testing strategy of symptimatics from 1st June
     #testing in June remains the same as before June under this scenario
@@ -121,7 +121,7 @@ if tti_scen in ['none', '40%', '80%'] and tti_scen == 'none':
     #no change in daily symptmatic probability in this scenario
     s_prob_june = 0.0139
     t_delay       = 1.0
-    
+
     iso_vals = [{k:0.1 for k in 'hswc'}]
 
     #tracing not on under this scenario
@@ -135,39 +135,39 @@ if tti_scen in ['none', '40%', '80%'] and tti_scen == 'none':
         cv.test_prob(symp_prob=s_prob_april, asymp_prob=0.0, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=te_day, end_day=tt_day-1, test_delay=t_delay),
         cv.test_prob(symp_prob=s_prob_may, asymp_prob=0.00075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tt_day, end_day=tti_day-1, test_delay=t_delay),
         cv.test_prob(symp_prob=s_prob_june, asymp_prob=0.00075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tti_day, test_delay=t_delay),
-        cv.dynamic_pars({'iso_factor': {'days': te_day, 'vals': iso_vals}}), 
+        cv.dynamic_pars({'iso_factor': {'days': te_day, 'vals': iso_vals}}),
         cv.contact_tracing(trace_probs=t_probs_june, trace_time=trace_d_1, start_day=tti_day),
       ]
-    
-elif tti_scen in ['none', '40%', '80%'] and tti_scen == '40%':
+
+elif tti_scen == '40%':
 
 # Tracing and enhanced testing strategy of symptimatics from 1st June with tracing at 40%
-    #testing in June 
+    #testing in June
     s_prob_march = 0.009
     s_prob_april = 0.012
     s_prob_may   = 0.0139
     #s_prob_june_2 is increased to minimum value to avoid secondary wave
     s_prob_june_1 = 0.0429
     t_delay       = 1.0
-    
+
     iso_vals = [{k:0.1 for k in 'hswc'}]
 
     #tracing in June is 40%
     t_eff_june   = 0.4
     t_probs_june = {k:t_eff_june for k in 'hwsc'}
     trace_d_2      = {'h':0, 's':1, 'w':1, 'c':2}
-   
+
     #testing and isolation intervention
     interventions += [
         cv.test_prob(symp_prob=0.009, asymp_prob=0.0, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tc_day, end_day=te_day-1, test_delay=t_delay),
         cv.test_prob(symp_prob=s_prob_april, asymp_prob=0.0, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=te_day, end_day=tt_day-1, test_delay=t_delay),
         cv.test_prob(symp_prob=s_prob_may, asymp_prob=0.00075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tt_day, end_day=tti_day-1, test_delay=t_delay),
         cv.test_prob(symp_prob=s_prob_june_1, asymp_prob=0.00075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tti_day, test_delay=t_delay),
-        cv.dynamic_pars({'iso_factor': {'days': te_day, 'vals': iso_vals}}), 
+        cv.dynamic_pars({'iso_factor': {'days': te_day, 'vals': iso_vals}}),
         cv.contact_tracing(trace_probs=t_probs_june, trace_time=trace_d_2, start_day=tti_day),
-      ]    
+      ]
 
-elif tti_scen in ['none', '40%', '80%'] and tti_scen == '80%':
+elif tti_scen == '80%':
 
     # Tracing and enhanced testing strategy of symptimatics from 1st June with tracing of 80%
     #testing in June
@@ -177,7 +177,7 @@ elif tti_scen in ['none', '40%', '80%'] and tti_scen == '80%':
     #s_prob_june_2 is increased to minimum value to avoid secondary wave
     s_prob_june_2 = 0.06
     t_delay       = 1.0
-    
+
     iso_vals = [{k:0.1 for k in 'hswc'}]
 
     #tracing in june at 80% for this scenario
@@ -191,11 +191,11 @@ elif tti_scen in ['none', '40%', '80%'] and tti_scen == '80%':
         cv.test_prob(symp_prob=s_prob_april, asymp_prob=0.0, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=te_day, end_day=tt_day-1, test_delay=t_delay),
         cv.test_prob(symp_prob=s_prob_may, asymp_prob=0.00075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tt_day, end_day=tti_day-1, test_delay=t_delay),
         cv.test_prob(symp_prob=s_prob_june_2, asymp_prob=0.00075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tti_day, test_delay=t_delay),
-        cv.dynamic_pars({'iso_factor': {'days': te_day, 'vals': iso_vals}}), 
+        cv.dynamic_pars({'iso_factor': {'days': te_day, 'vals': iso_vals}}),
         cv.contact_tracing(trace_probs=t_probs_june, trace_time=trace_d_3, start_day=tti_day),
       ]
 else:
-    print(f'Scenario {scenario} not recognised')
+    print(f'Scenario {tti_scen} not recognised')
 
 
 # Finally, update the parameters
@@ -233,7 +233,7 @@ if __name__ == '__main__':
     pl.axhline(1.0, linestyle='--', c=[0.8,0.4,0.4], alpha=0.8, lw=4) # Add a line for the R_eff = 1 cutoff
     pl.title('')
     cv.savefig('R_eff.png')
-    
+
     msim.plot_result('cum_deaths', **plot_customizations)
     pl.title('')
     cv.savefig('Deaths.png')
@@ -245,7 +245,7 @@ if __name__ == '__main__':
     msim.plot_result('cum_diagnoses', **plot_customizations)
     pl.title('')
     cv.savefig('Diagnoses.png')
-            
+
 ##for calibration figures
    # msim.plot_result('cum_deaths', interval=20, fig_args={'figsize':(12,7)}, axis_args={'left':0.15})
    # pl.title('')
