@@ -3,15 +3,12 @@ UK scenarios
 '''
 
 import sciris as sc
-import numpy as np
 import covasim as cv
 import pylab as pl
 
 # Check version
-cv.check_version('1.3.3', die=True)
+cv.check_version('1.3.3')
 cv.git_info('covasim_version.json')
-
-scenario =
 
 do_plot = 1
 do_save = 1
@@ -19,7 +16,7 @@ do_show = 1
 verbose = 1
 seed    = 1
 
-scenario = ['jun-opening', ][0] # Set a number to pick a scenario
+scenario = ['jun-opening', 'sep-opening', 'phased', 'phased-delayed'][0] # Set a number to pick a scenario from the available options
 tti_scen = ['none', '40%', '80%'][0] # Ditto
 
 version   = 'v1'
