@@ -16,8 +16,8 @@ do_show = 1
 verbose = 1
 seed    = 1
 
-scenario = ['jun-opening', 'sep-opening', 'phased', 'phased-delayed'][0] # Set a number to pick a scenario from the available options
-tti_scen = ['none', '40%', '80%'][0] # Ditto
+scenario = ['jun-opening', 'sep-opening', 'phased', 'phased-delayed'][3] # Set a number to pick a scenario from the available options
+tti_scen = ['none', '40%', '80%'][2] # Ditto
 
 version   = 'v1'
 date      = '2020may26'

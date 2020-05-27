@@ -1,9 +1,9 @@
 {
   "covasim": {
-    "version": "1.3.4",
-    "branch": "update-scrapers",
-    "hash": "a9461e7",
-    "date": "2020-05-26T21:51:09-07:00"
+    "version": "1.3.3",
+    "branch": "develop",
+    "hash": "d1b2bc4",
+    "date": "2020-05-26T19:14:57-07:00"
   },
   "called_by": {
     "branch": "Git branch N/A",
