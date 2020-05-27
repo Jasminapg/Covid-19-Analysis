@@ -8,7 +8,7 @@ import covasim as cv
 import pylab as pl
 
 # Check version
-cv.check_version('1.3.2', die=True)
+cv.check_version('1.3.3', die=True)
 cv.git_info('covasim_version.json')
 
 do_plot = 1
@@ -296,25 +296,32 @@ if __name__ == '__main__':
 
     # Save the key figures
 
-    msim.plot_result('r_eff', interval=60, fig_args={'figsize':(12,7)}, axis_args={'left':0.15})
+    plot_customizations = dict(
+        interval=90,
+        fig_args={'figsize':(14,8)},
+        axis_args={'left':0.15},
+        dateformat='%Y/%m'
+        )
+
+    msim.plot_result('r_eff', **plot_customizations)
     # pl.xlim([10, 496]) # Trim off the beginning and end which are noisy
     pl.axhline(1.0, c=[0.2, 0.1, 0.8], alpha=0.3, lw=3) # Add a line for the R_eff = 1 cutoff
     pl.title('')
     pl.savefig('R_eff.png')
 
-    msim.plot_result('cum_deaths', interval=60, fig_args={'figsize':(12,7)}, axis_args={'left':0.15})
+    msim.plot_result('cum_deaths', **plot_customizations)
     pl.title('')
     pl.savefig('Deaths.png')
 
-    msim.plot_result('new_infections', interval=60, fig_args={'figsize':(12,7)}, axis_args={'left':0.15})
+    msim.plot_result('new_infections', **plot_customizations)
     pl.title('')
     pl.savefig('Infections.png')
 
-    msim.plot_result('cum_diagnoses', interval=60, fig_args={'figsize':(12,7)}, axis_args={'left':0.15})
+    msim.plot_result('cum_diagnoses', **plot_customizations)
     pl.title('')
     pl.savefig('Diagnoses.png')
 
-    msim.plot_result('new_tests')
+    msim.plot_result('new_tests', **plot_customizations)
     pl.savefig('Test.png')
     ##to_plot[‘Health outcomes’].remove(‘cum_severe’)
     #sim.plot()
