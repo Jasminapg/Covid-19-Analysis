@@ -19,7 +19,8 @@ do_show = 1
 verbose = 1
 seed    = 1
 
-scenario = 'june-reopening'
+scenario = ['jun-opening', ][0] # Set a number to pick a scenario
+tti_scen = ['none', '40%', '80%'][0] # Ditto
 
 version   = 'v1'
 date      = '2020may26'
@@ -58,11 +59,8 @@ pars = sc.objdict(
 sim = cv.Sim(pars=pars, datafile=data_path, location='uk')
 
 
-# Interventions
+#%% Interventions
 
-#opening and closing schools intervention changing the h,s,w,c values and ti_start to
-#account for changes in Table 1 in the ms
-#baseline scenario
 
 # Create the baseline simulation
 
@@ -116,69 +114,60 @@ c_beta = cv.change_beta(days=beta_days, changes=c_beta_changes, layers='c')
 #next two lines to save the intervention
 interventions = [h_beta, w_beta, s_beta, c_beta]
 
-#Testing and Isolation interventions until 1st June
-#s_prob=% of sympomatic that are tested only as part of TI strategies; we fit s_prob_may to data
-s_prob_march = 0.007
-s_prob_april = 0.009
-s_prob_may   = 0.0135
-a_prob       = 0.0
-q_prob       = 0.0
-t_delay      = 1.0
 
-iso_vals = [{k:0.1 for k in 'hswc'}]
+if tti_scen in ['40%', '80%']:
 
-interventions += [
-     cv.test_prob(symp_prob=s_prob_march, asymp_prob=0.00030, symp_quar_prob=q_prob, asymp_quar_prob=q_prob, start_day=tc_day, end_day=te_day-1, test_delay=t_delay),
-     cv.test_prob(symp_prob=s_prob_april, asymp_prob=0.00050, symp_quar_prob=q_prob, asymp_quar_prob=q_prob, start_day=te_day, end_day=tt_day-1, test_delay=t_delay),
-     cv.test_prob(symp_prob=s_prob_may,   asymp_prob=0.00075, symp_quar_prob=q_prob, asymp_quar_prob=q_prob, start_day=tt_day, end_day=tti_day-1, test_delay=t_delay),
-     cv.dynamic_pars({'iso_factor': {'days': te_day, 'vals': iso_vals}}),
-   ]
+    #Testing and Isolation interventions until 1st June
+    #s_prob=% of sympomatic that are tested only as part of TI strategies; we fit s_prob_may to data
+    s_prob_march = 0.007
+    s_prob_april = 0.009
+    s_prob_may   = 0.0135
+    a_prob       = 0.0
+    q_prob       = 0.0
+    t_delay      = 1.0
 
-# Tracing and enhanced testing strategy of symptimatics from 1st June
-#testing in June
-s_prob_june_2 = 0.0135
-a_prob_june_2 = 0.0007
-q_prob_june   = 0.0
-t_delay       = 1.0
+    iso_vals = [{k:0.1 for k in 'hswc'}]
 
-#tracing in june
-t_eff_june   = 0.0
-t_probs_june = {k:t_eff_june for k in 'hwsc'}
-trace_d      = {'h':0, 's':1, 'w':1, 'c':2}
-ttq_june_2   = cv.contact_tracing(trace_probs = t_probs_june, trace_time = trace_d, start_day = tti_day)
+    interventions += [
+         cv.test_prob(symp_prob=s_prob_march, asymp_prob=0.00030, symp_quar_prob=q_prob, asymp_quar_prob=q_prob, start_day=tc_day, end_day=te_day-1, test_delay=t_delay),
+         cv.test_prob(symp_prob=s_prob_april, asymp_prob=0.00050, symp_quar_prob=q_prob, asymp_quar_prob=q_prob, start_day=te_day, end_day=tt_day-1, test_delay=t_delay),
+         cv.test_prob(symp_prob=s_prob_may,   asymp_prob=0.00075, symp_quar_prob=q_prob, asymp_quar_prob=q_prob, start_day=tt_day, end_day=tti_day-1, test_delay=t_delay),
+         cv.dynamic_pars({'iso_factor': {'days': te_day, 'vals': iso_vals}}),
+       ]
 
-#testing and isolation intervention
-interventions += [
-     cv.test_prob(symp_prob=s_prob_june_2, asymp_prob=0.0007, symp_quar_prob=q_prob_june, asymp_quar_prob=q_prob_june, start_day=tti_day, test_delay=t_delay),
-     cv.contact_tracing(trace_probs=t_probs_june, trace_time=trace_d, start_day=tti_day),
-     cv.dynamic_pars({'iso_factor': {'days': tti_day, 'vals': iso_vals}})
-  ]
+if tti_scen == '80%':
 
+    # Tracing and enhanced testing strategy of symptimatics from 1st June
+    #testing in June
+    s_prob_june_2 = 0.0135
+    a_prob_june_2 = 0.0007
+    q_prob_june   = 0.0
+    t_delay       = 1.0
+
+    #tracing in june
+    t_eff_june   = 0.0
+    t_probs_june = {k:t_eff_june for k in 'hwsc'}
+    trace_d      = {'h':0, 's':1, 'w':1, 'c':2}
+    ttq_june_2   = cv.contact_tracing(trace_probs = t_probs_june, trace_time = trace_d, start_day = tti_day)
+
+    #testing and isolation intervention
+    interventions += [
+         cv.test_prob(symp_prob=s_prob_june_2, asymp_prob=0.0007, symp_quar_prob=q_prob_june, asymp_quar_prob=q_prob_june, start_day=tti_day, test_delay=t_delay),
+         cv.contact_tracing(trace_probs=t_probs_june, trace_time=trace_d, start_day=tti_day),
+         cv.dynamic_pars({'iso_factor': {'days': tti_day, 'vals': iso_vals}})
+      ]
+
+# Finally, update the parameters
 sim.update_pars(interventions=interventions)
 for intervention in sim['interventions']:
     intervention.do_plot = False
 
-
-# Changing kids' transmissability
-sim.initialize() # Create the population
-reduce_kids = True #set tgis to True to change the transmissibility numbers below
-if reduce_kids:
-    print('Reducing transmission among kids')
-    children = sim.people.age<18 # Find people who are children
-    child_inds = sc.findinds(children) # Turn the boolean array into a list of indices
-    for lkey in sim.people.layer_keys(): # Loop over each layer
-        child_contacts = np.isin(sim.people.contacts[lkey]['p1'], child_inds) # Find contacts where the source is a child
-        child_contact_inds = sc.findinds(child_contacts) # Convert to indices
-        sim.people.contacts[lkey]['beta'][child_contact_inds] = 1.0 # MODIFY TRANSMISSION
-        #sim.people.contacts[lkey]['beta'][:] = 0.0 # MODIFY TRANSMISSION
-
-
 if __name__ == '__main__':
 
-    NOISE = 0.00
+    noise = 0.00
 
     msim = cv.MultiSim(base_sim=sim) # Create using your existing sim as the base
-    msim.run(reseed=True, noise=NOISE, n_runs=8, keep_people=True) # Run with uncertainty
+    msim.run(reseed=True, noise=noise, n_runs=8, keep_people=True) # Run with uncertainty
 
     # Recalculate R_eff with a larger window
     for sim in msim.sims:
@@ -186,15 +175,12 @@ if __name__ == '__main__':
 
     msim.reduce() # "Reduce" the sims into the statistical representation
 
-    results = msim.results # Use this instead of sim.results
-
     #to produce mean cumulative infections and deaths for barchart figure
-    #msim.results['cum_deaths'].values.mean()
-    #msim.results['cum_infectious'].values.mean()
-
+    print('Mean cumulative values:')
+    print('Deaths: ',     msim.results['cum_deaths'][-1])
+    print('Infections: ', msim.results['cum_infectious'][-1])
 
     # Save the key figures
-
     plot_customizations = dict(
         interval   = 90, # Number of days between tick marks
         dateformat = '%Y/%m', # Date format for ticks
@@ -203,48 +189,21 @@ if __name__ == '__main__':
         )
 
     msim.plot_result('r_eff', **plot_customizations)
-    # pl.xlim([10, 496]) # Trim off the beginning and end which are noisy
     pl.axhline(1.0, linestyle='--', c=[0.8,0.4,0.4], alpha=0.8, lw=4) # Add a line for the R_eff = 1 cutoff
     pl.title('')
-    pl.savefig('R_eff.png')
+    cv.savefig('R_eff.png')
 
     msim.plot_result('cum_deaths', **plot_customizations)
     pl.title('')
-    pl.savefig('Deaths.png')
+    cv.savefig('Deaths.png')
 
     msim.plot_result('new_infections', **plot_customizations)
     pl.title('')
-    pl.savefig('Infections.png')
+    cv.savefig('Infections.png')
 
     msim.plot_result('cum_diagnoses', **plot_customizations)
     pl.title('')
-    pl.savefig('Diagnoses.png')
+    cv.savefig('Diagnoses.png')
 
     msim.plot_result('new_tests', **plot_customizations)
-    pl.savefig('Test.png')
-
-
-
-    #if do_plot:
-     #   to_plot = cv.get_sim_plots()
-      #  to_plot['Health outcomes'].remove('cum_severe')
-       # fig = msim.plot(to_plot=to_plot, do_save=do_save, do_show=do_show, fig_path=fig_path, interval=60)
-
-
-    # if do_save:
-    #     msim.save(f'{file_path}.sim', keep_people=True)
-
-    # if do_plot:
-    #     for reskey in ['new_infections', 'cum_deaths']:
-    #         fig = msim.plot(to_plot=[reskey], fig_args={'figsize':(12,7)}, do_save=do_save, fig_path=fig_path, interval=60)
-    #         pl.title('')
-
-    #to_plot = cv.get_sim_plots()
-    #to_plot['Health outcomes'].remove('cum_severe')
-    #sim.plot(to_plot=to_plot)
-
-   # if do_plot:
-        #to_plot = cv.get_sim_plots()
-        #to_plot['Health outcomes'].remove('cum_severe')
-        #sim.plot(to_plot=to_plot)
-    #    fig = msim.plot(to_plot=to_plot,do_save=do_save, do_show=do_show, fig_path=fig_path, interval=60)
+    cv.savefig('Test.png')
