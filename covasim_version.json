@@ -1,14 +1,14 @@
 {
   "covasim": {
-    "version": "1.3.4",
-    "branch": "develop",
-    "hash": "8b157a2",
-    "date": "2020-05-27T03:03:01-07:00"
+    "version": "1.4.0",
+    "branch": "fitness-class",
+    "hash": "38eb039",
+    "date": "2020-05-28T22:29:11-07:00"
   },
   "called_by": {
     "branch": "Git branch N/A",
     "hash": "Git has",
     "date": "Git date N/A",
-    "filename": "/software/anaconda3/lib/python3.7/site-packages/spyder_kernels/customize/spydercustomize.py"
+    "filename": "/Applications/PyCharm CE.app/Contents/helpers/pydev/_pydev_imps/_pydev_execfile.py"
   }
 }
