@@ -94,75 +94,17 @@ def create_sim(pars=None):
       ]
 
 
-
-
-    return sim
-
-import numpy as np
-import pylab as pl
-import sciris as sc
-import covasim as cv
-import optuna as op
-import load_data as ld
-
-# Control verbosity
-vb = sc.objdict()
-vb.base    = 0
-vb.extra   = 0
-vb.plot    = 0
-vb.verbose = 0
-
-# Define and load the data
-state    = 'CA'  # Choose the state here!
-all_data = ld.load_data()
-data     = all_data[state]
-
-cv.check_version('1.4.8', die=False)
-
-
-def create_sim(x, vb=vb):
-    ''' Create the simulation from the parameters '''
-
-    # Convert parameters
-    pop_infected = x[0]
-    beta         = x[1]
-    beta_day     = x[2]
-    beta_change  = x[3]
-    symp_test    = x[4]
-
-    # Create parameters
-    pop_size = 200e3
-    pars = dict(
-        pop_size     = pop_size,
-        pop_scale    = data.popsize/pop_size,
-        pop_infected = pop_infected,
-        beta         = beta,
-        start_day    = '2020-03-01',
-        end_day      = '2020-06-17',
-        rescale      = True,
-        verbose      = vb.verbose,
-    )
-
-    #Create the sim
-    sim = cv.Sim(pars, datafile=data.epi)
-
-    # Add interventions
-    interventions = [
-        cv.change_beta(days=beta_day, changes=beta_change),
-        cv.test_num(daily_tests=sim.data['new_tests'].dropna(), symp_test=symp_test),
-        ]
-
-    # Update
     sim.update_pars(interventions=interventions)
 
     return sim
 
 
-def objective(x, vb=vb):
+
+def objective(x):
     ''' Define the objective function we are trying to minimize '''
 
     # Create and run the sim
-    sim = create_sim(x=x, vb=vb)
+    sim = create_sim(pars=dict(beta=x[0], pop_infected=x[1]))
     sim.run()
     fit = sim.compute_fit()
 
@@ -172,11 +114,8 @@ def objective(x, vb=vb):
 def get_bounds():
     ''' Set parameter starting points and bounds '''
     pdict = sc.objdict(
-        pop_infected = dict(best=1000,  lb=100,   ub=10000),
-        beta         = dict(best=0.015, lb=0.008, ub=0.020),
-        beta_day     = dict(best=20,    lb=5,     ub=60),
-        beta_change  = dict(best=0.5,   lb=0.2,   ub=0.9),
-        symp_test    = dict(best=30,   lb=5,    ub=200),
+        pop_infected = dict(best=4500,  lb=1000,   ub=10000),
+        beta         = dict(best=0.00522, lb=0.003, ub=0.008),
     )
 
     # Convert from dicts to arrays
