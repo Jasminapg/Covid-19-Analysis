@@ -1,16 +1,18 @@
-import numpy   as np; np
-import pylab   as pl; pl
-import pandas  as pd; pd
-import sciris  as sc; sc
-import covasim as cv; cv
+import pandas as pd
+import numpy as np
+import pylab as pl
+import sciris as sc
+import covasim as cv
+import optuna as op
 
 
-def create_sim(pars=None):
+def create_sim(x):
 
-    pars = sc.mergedicts(dict(beta=0.00522, pop_infected=4500), pars) # Default parameters
+    beta = x[0]
+    pop_infected = x[1]
 
     start_day = '2020-01-21'
-    end_day   = '2021-05-31'
+    end_day   = '2020-05-31'
     data_path = 'UK_Covid_cases_may21.xlsx'
 
     # Set the parameters
@@ -18,25 +20,21 @@ def create_sim(pars=None):
     pop_size     = 100e3 # Actual simulated population
     pop_scale    = int(total_pop/pop_size)
     pop_type     = 'hybrid'
-    #kids infectiousness the same as adults
-    #pop_infected = 4500
-    #beta         = 0.00522
-    ##kids infectiousness 50% that of adults
-    #
     asymp_factor = 2
     contacts     = {'h':3.0, 's':20, 'w':20, 'c':20}
 
     pars = sc.objdict(
         pop_size     = pop_size,
-        pop_infected = pars['pop_infected'],
+        pop_infected = pop_infected,
         pop_scale    = pop_scale,
         pop_type     = pop_type,
         start_day    = start_day,
         end_day      = end_day,
-        beta         = pars['beta'],
+        beta         = beta,
         asymp_factor = asymp_factor,
         contacts     = contacts,
         rescale      = True,
+        verbose      = 0.1,
     )
 
     # Create the baseline simulation
@@ -95,6 +93,8 @@ def create_sim(pars=None):
 
 
     sim.update_pars(interventions=interventions)
+    for intervention in sim['interventions']:
+        intervention.do_plot = False
 
     return sim
 
@@ -104,7 +104,7 @@ def objective(x):
     ''' Define the objective function we are trying to minimize '''
 
     # Create and run the sim
-    sim = create_sim(pars=dict(beta=x[0], pop_infected=x[1]))
+    sim = create_sim(x)
     sim.run()
     fit = sim.compute_fit()
 
@@ -114,8 +114,8 @@ def objective(x):
 def get_bounds():
     ''' Set parameter starting points and bounds '''
     pdict = sc.objdict(
-        pop_infected = dict(best=4500,  lb=1000,   ub=10000),
         beta         = dict(best=0.00522, lb=0.003, ub=0.008),
+        pop_infected = dict(best=4500,  lb=1000,   ub=10000),
     )
 
     # Convert from dicts to arrays
@@ -128,10 +128,10 @@ def get_bounds():
 
 #%% Calibration
 
-name      = 'optuna'
+name      = 'covasim_uk_calibration'
 storage   = f'sqlite:///{name}.db'
 n_trials  = 100
-n_workers = 8
+n_workers = 4
 
 pars, pkeys = get_bounds() # Get parameter guesses
 
@@ -144,6 +144,7 @@ def op_objective(trial):
         x[k] = trial.suggest_uniform(key, pars.lb[k], pars.ub[k])
 
     return objective(x)
+
 
 def worker():
     study = op.load_study(storage=storage, study_name=name)
@@ -166,7 +167,44 @@ def calibrate():
     run_workers()
     study = op.load_study(storage=storage, study_name=name)
     output = study.best_params
-    return output
+    return output, study
+
+
+def savejson(study):
+    dbname = 'calibrated_parameters_UK'
+
+    sc.heading('Making results structure...')
+    results = []
+    failed_trials = []
+    for trial in study.trials:
+        data = {'index':trial.number, 'mismatch': trial.value}
+        for key,val in trial.params.items():
+            data[key] = val
+        if data['mismatch'] is None:
+            failed_trials.append(data['index'])
+        else:
+            results.append(data)
+    print(f'Processed {len(study.trials)} trials; {len(failed_trials)} failed')
+
+    sc.heading('Making data structure...')
+    keys = ['index', 'mismatch'] + pkeys
+    data = sc.objdict().make(keys=keys, vals=[])
+    for i,r in enumerate(results):
+        for key in keys:
+            data[key].append(r[key])
+    df = pd.DataFrame.from_dict(data)
+
+    order = np.argsort(df['mismatch'])
+    json = []
+    for o in order:
+        row = df.iloc[o,:].to_dict()
+        rowdict = dict(index=row.pop('index'), mismatch=row.pop('mismatch'), pars={})
+        for key,val in row.items():
+            rowdict['pars'][key] = val
+        json.append(rowdict)
+    sc.savejson(f'{dbname}.json', json, indent=2)
+
+    return
 
 
 if __name__ == '__main__':
@@ -188,19 +226,18 @@ if __name__ == '__main__':
     # Calibrate
     print('Starting calibration for {state}...')
     T = sc.tic()
-    pars_calib = calibrate()
+    pars_calib, study = calibrate()
     sc.toc(T)
 
     # Plot result
     print('Plotting result...')
-    x = [pars_calib[k] for k in pkeys]
-    sim = create_sim(x)
+    sim = create_sim([pars_calib['beta'], pars_calib['pop_infected']])
     sim.run()
     sim.plot(to_plot=to_plot)
     pl.gcf().axes[0].set_title('Calibrated parameter values')
 
     if do_save:
-        sc.savejson(f'calibrated_parameters_{state}.json', pars_calib)
+        savejson(study)
 
 
 print('Done.')
