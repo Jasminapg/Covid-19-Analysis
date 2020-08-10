@@ -154,7 +154,7 @@ if tti_scen == 'current':
         cv.contact_tracing(trace_probs=t_probs_august, trace_time=trace_d_1, start_day=tti_day_august),
       ]
 
-elif tti_scen == 'test_trace':
+elif tti_scen == 'test-trace':
 
 # Tracing and enhanced testing strategy of symptimatics to change for phase plots
     #Phase plots=need to change s_prob_august and t_eff_august and plot R, new infections, deaths and diagnosis for different combinations of s_prob_august and t_eff_august
@@ -228,31 +228,30 @@ if __name__ == '__main__':
         pass
     outfile = "%s/test%s-trace%s.obj" % (scenario, args.test, args.trace)
     sc.saveobj(outfile, sc.objdict((("args", args), ("results", msim.results))))
-#
-#    # Save the key figures
-#    plot_customizations = dict(
-#        interval   = 90, # Number of days between tick marks
-#        dateformat = '%m/%Y', # Date format for ticks
-#        fig_args   = {'figsize':(14,8)}, # Size of the figure (x and y)
-#        axis_args  = {'left':0.15}, # Space on left side of plot
-#        )
-#
-#    msim.plot_result('r_eff', **plot_customizations)
-#    #sim.plot_result('r_eff')
-#    pl.axhline(1.0, linestyle='--', c=[0.8,0.4,0.4], alpha=0.8, lw=4) # Add a line for the R_eff = 1 cutoff
-#    pl.title('')
-#    pl.savefig('R.pdf')
-#
-#    msim.plot_result('cum_deaths', **plot_customizations)
-#    pl.title('')
-#    cv.savefig('Deaths.pdf')
-#
-#    msim.plot_result('new_infections', **plot_customizations)
-#    pl.title('')
-#    cv.savefig('Infections.pdf')
-#
-#    msim.plot_result('cum_diagnoses', **plot_customizations)
-#    pl.title('')
-#    cv.savefig('Diagnoses.pdf')
-#
-#
+
+    # Save the key figures
+    plot_customizations = dict(
+        interval   = 90, # Number of days between tick marks
+        dateformat = '%m/%Y', # Date format for ticks
+        fig_args   = {'figsize':(14,8)}, # Size of the figure (x and y)
+        axis_args  = {'left':0.15}, # Space on left side of plot
+        )
+
+    msim.plot_result('r_eff', **plot_customizations)
+    #sim.plot_result('r_eff')
+    pl.axhline(1.0, linestyle='--', c=[0.8,0.4,0.4], alpha=0.8, lw=4) # Add a line for the R_eff = 1 cutoff
+    pl.title('')
+    pl.savefig('%s/test%s-trace%s-R.pdf' % (scenario, args.test, args.trace))
+
+    msim.plot_result('cum_deaths', **plot_customizations)
+    pl.title('')
+    cv.savefig('%s/test%s-trace%s-Deaths.pdf' % (scenario, args.test, args.trace))
+
+    msim.plot_result('new_infections', **plot_customizations)
+    pl.title('')
+    cv.savefig('%s/test%s-trace%s-Infections.pdf' % (scenario, args.test, args.trace))
+
+    msim.plot_result('cum_diagnoses', **plot_customizations)
+    pl.title('')
+    cv.savefig('%s/test%s-trace%s-Diagnoses.pdf' % (scenario, args.test, args.trace))
+
