@@ -6,6 +6,14 @@ import sciris as sc
 import covasim as cv
 import pylab as pl
 import numpy as np
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--test", type=float, default=0.0171)
+parser.add_argument("--trace", type=float, default=0.5)
+parser.add_argument("--scenario", type=int, default=0)
+args = parser.parse_args()
+
 pl.switch_backend('agg')
 
 # Check version
@@ -18,7 +26,7 @@ do_show = 1
 verbose = 1
 seed    = 1
 
-scenario = ['phased-june-full-sep', 'phased-june-full-sep-masks15'][0] # Set a number to pick a scenario from the available options
+scenario = ['phased-june-full-sep', 'phased-june-full-sep-masks15'][args.scenario] # Set a number to pick a scenario from the available options
 tti_scen = ['current', 'test-trace'][1] # Ditt0
 
 version   = 'v1'
@@ -158,7 +166,7 @@ elif tti_scen == 'test_trace':
     s_prob_june = 0.0171
     s_prob_july = 0.0171
     #we want to vary s_prob_august to vary testing level
-    s_prob_august = 0.0171
+    s_prob_august = args.test
     t_delay       = 1.0
 
     iso_vals = [{k:0.1 for k in 'hswc'}]
@@ -167,7 +175,7 @@ elif tti_scen == 'test_trace':
     #we want to vary t_eff_august to vary tracing level
     t_eff_june   = 0.68
     t_eff_july   = 0.50
-    t_eff_august = 0.50
+    t_eff_august = args.trace
     t_probs_june = {k:t_eff_june for k in 'hwsc'}
     t_probs_july = {k:t_eff_july for k in 'hwsc'}
     t_probs_august = {k:t_eff_august for k in 'hwsc'}
@@ -201,7 +209,7 @@ if __name__ == '__main__':
     noise = 0.00
 
     msim = cv.MultiSim(base_sim=sim) # Create using your existing sim as the base
-    msim.run(reseed=True, noise=noise, n_runs=10, keep_people=True) # Run with uncertainty
+    msim.run(reseed=True, noise=noise, n_runs=12, keep_people=True) # Run with uncertainty
 
     # Recalculate R_eff with a larger window
     for sim in msim.sims:
@@ -214,30 +222,37 @@ if __name__ == '__main__':
     print('Deaths: ',     msim.results['cum_deaths'][-1])
     print('Infections: ', msim.results['cum_infections'][-1])
 
-    # Save the key figures
-    plot_customizations = dict(
-        interval   = 90, # Number of days between tick marks
-        dateformat = '%m/%Y', # Date format for ticks
-        fig_args   = {'figsize':(14,8)}, # Size of the figure (x and y)
-        axis_args  = {'left':0.15}, # Space on left side of plot
-        )
-
-    msim.plot_result('r_eff', **plot_customizations)
-    #sim.plot_result('r_eff')
-    pl.axhline(1.0, linestyle='--', c=[0.8,0.4,0.4], alpha=0.8, lw=4) # Add a line for the R_eff = 1 cutoff
-    pl.title('')
-    pl.savefig('R.pdf')
-
-    msim.plot_result('cum_deaths', **plot_customizations)
-    pl.title('')
-    cv.savefig('Deaths.pdf')
-
-    msim.plot_result('new_infections', **plot_customizations)
-    pl.title('')
-    cv.savefig('Infections.pdf')
-
-    msim.plot_result('cum_diagnoses', **plot_customizations)
-    pl.title('')
-    cv.savefig('Diagnoses.pdf')
-
-
+    try:
+        os.makedirs("%s" % scenario)
+    except:
+        pass
+    outfile = "%s/test%s-trace%s.obj" % (scenario, args.test, args.trace)
+    sc.saveobj(outfile, sc.objdict((("args", args), ("results", msim.results))))
+#
+#    # Save the key figures
+#    plot_customizations = dict(
+#        interval   = 90, # Number of days between tick marks
+#        dateformat = '%m/%Y', # Date format for ticks
+#        fig_args   = {'figsize':(14,8)}, # Size of the figure (x and y)
+#        axis_args  = {'left':0.15}, # Space on left side of plot
+#        )
+#
+#    msim.plot_result('r_eff', **plot_customizations)
+#    #sim.plot_result('r_eff')
+#    pl.axhline(1.0, linestyle='--', c=[0.8,0.4,0.4], alpha=0.8, lw=4) # Add a line for the R_eff = 1 cutoff
+#    pl.title('')
+#    pl.savefig('R.pdf')
+#
+#    msim.plot_result('cum_deaths', **plot_customizations)
+#    pl.title('')
+#    cv.savefig('Deaths.pdf')
+#
+#    msim.plot_result('new_infections', **plot_customizations)
+#    pl.title('')
+#    cv.savefig('Infections.pdf')
+#
+#    msim.plot_result('cum_diagnoses', **plot_customizations)
+#    pl.title('')
+#    cv.savefig('Diagnoses.pdf')
+#
+#
