@@ -12,6 +12,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--test", type=float, default=0.0171)
 parser.add_argument("--trace", type=float, default=0.47)
 parser.add_argument("--scenario", type=int, default=0)
+parser.add_argument("--samples", type=int, default=12)
 args = parser.parse_args()
 
 pl.switch_backend('agg')
@@ -234,7 +235,7 @@ if __name__ == '__main__':
     noise = 0.00
 
     msim = cv.MultiSim(base_sim=sim) # Create using your existing sim as the base
-    msim.run(reseed=True, noise=noise, n_runs=12, keep_people=True) # Run with uncertainty
+    msim.run(reseed=True, noise=noise, n_runs=args.samples, keep_people=True) # Run with uncertainty
 
     # Recalculate R_eff with a larger window
     for sim in msim.sims:
@@ -252,7 +253,8 @@ if __name__ == '__main__':
     except:
         pass
     outfile = "%s/test%s-trace%s.obj" % (scenario, args.test, args.trace)
-    sc.saveobj(outfile, sc.objdict((("args", args), ("results", msim.results))))
+    msim.args = args
+    sc.saveobj(outfile, sc.objdict((("args", args), ("msim", msim.results), ("sims", list(sim.results for sim in msim.sims)))))
 
     # Save the key figures
     plot_customizations = dict(
