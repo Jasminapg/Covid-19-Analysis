@@ -1,5 +1,6 @@
 import os
 import sciris as sc
+import numpy as np
 from datetime import datetime
 
 start = datetime.strptime("2020-01-21", "%Y-%m-%d")
@@ -18,6 +19,10 @@ for test, expected in [(0.0171, 120000), (0.12, 1000)]:
     ## load the results
     outfile = "%s/test%.02f-trace%.02f.obj" % (scenarios[scenario], test, trace)
     results = sc.loadobj(outfile)
+
+    ## ensure that we get at least some infections
+    if not np.any(results["msim"]["new_infections"]):
+        raise ValueError("%s got no infections at all, how strange\ncommand: %s" % (scenarios[scenario], cmd))
 
     ## ensure that the expected value of infections after september is within 10% of expected
     infections = max(results["msim"]["new_infections"][t:])
