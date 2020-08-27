@@ -112,7 +112,7 @@ elif scenario == 'high_comp':
 # Community contacts reduction by 12% means 80% of normal during termtime and 62% during holidays from 24th July 
 # Schools contacts normal
 # masks NOT in secondary schools from 1st September
-if scenario == 'low_comp_notschools':
+elif scenario == 'low_comp_notschools':
     h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.00, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29]
     s_beta_changes = [1.00, 0.90, 0.02, 0.02, 0.02, 0.21, 0.36, 0.02, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00]
     w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50]
@@ -129,7 +129,7 @@ elif scenario == 'high_comp_notschools':
     c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.50, 0.68, 0.53, 0.68, 0.53, 0.68, 0.53, 0.63, 0.53, 0.68, 0.53, 0.68, 0.53, 0.68, 0.53, 0.68, 0.53]
 
 else:
-    print(f'Scenario {scenario} not recognised')
+    raise ValueError(f'Scenario {scenario} not recognised')
 
 # Define the beta changes
 h_beta = cv.change_beta(days=beta_days, changes=h_beta_changes, layers='h')
