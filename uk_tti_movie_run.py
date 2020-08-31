@@ -1,5 +1,6 @@
 '''
-UK scenarios for evaluating effectivness of masks
+This file generates the simulations for plotting as a movie. For 2000 sims,
+generates a file of about 140 MB.
 '''
 
 import numpy as np
