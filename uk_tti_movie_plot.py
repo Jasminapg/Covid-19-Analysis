@@ -57,7 +57,7 @@ if plot_movie:
     count = 0
     for i in range(nsims): # Loop over the frames
         if i not in inds:
-            print('  ...skipping {i}')
+            print(f'  ...skipping {i}')
         else:
             print(f'Plotting {i}, testing = {test_pct[i]}%...')
             count += 1
@@ -71,8 +71,8 @@ if plot_movie:
                 handles.append(plt[0]) # 0 since returns a list...why
             pl.xlim(xlims) # Set x-axis limits
             pl.ylim(ylims) # Set y-axis limits
-            kwargs = {'transform':pl.gca().transAxes, 'horizontalalignment':'center'} # Set the "title" properties
-            title = pl.text(0.5, 1.05, f'Symptomatic testing rate after August 1st:\n{test_pct[i]:0.1f}%', **kwargs) # Unfortunately pl.title() can't be dynamically updated
+            kwargs = {'transform':pl.gca().transAxes, 'horizontalalignment':'center', 'fontsize':18} # Set the "title" properties
+            title = pl.text(0.5, 1.02, f'Symptomatic testing rate after August 1st: {test_pct[i]:0.1f}%', **kwargs) # Unfortunately pl.title() can't be dynamically updated
             handles.append(title)
             pl.xlabel('Date', fontweight='bold')
             pl.ylabel('New infections per day', fontweight='bold')
@@ -83,7 +83,7 @@ if plot_movie:
             @ticker.FuncFormatter
             def date_formatter(x, pos):
                 return (s0['start_day'] + dt.timedelta(days=int(x))).strftime('%Y-%b')
-            interval = 91.5
+            interval = 91.5 # This is 3 months
             ax = pl.gca()
             ax.set_xticks(pl.arange(xlims[0], xlims[1], interval))
             ax.xaxis.set_major_formatter(date_formatter)
