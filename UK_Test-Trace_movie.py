@@ -126,12 +126,14 @@ def create_sim(test=0.0171, trace=0.47, seed=1):
 
 if __name__ == '__main__':
 
+    do_save = True
+
     sims = []
 
     mintest = 0.0
     maxtest = 0.2
     nsims   = 2
-    seeds   = 1
+    seeds   = 2
 
     for test in np.linspace(mintest, maxtest, nsims):
         for seed in range(seeds):
@@ -142,12 +144,8 @@ if __name__ == '__main__':
     msim = cv.MultiSim(sims) # Create using your existing sim as the base
     msim.run() # Run with uncertainty
 
-    msim.reduce() # "Reduce" the sims into the statistical representation
-
-    #to produce mean cumulative infections and deaths for barchart figure
-    print('Mean cumulative values:')
-    print('Deaths: ',     msim.results['cum_deaths'][-1])
-    print('Infections: ', msim.results['cum_infections'][-1])
+    if do_save:
+        msim.save('uk-tti-movie.msim')
 
     # Save the key figures
     plot_customizations = dict(
