@@ -132,8 +132,8 @@ if __name__ == '__main__':
 
     mintest = 0.0
     maxtest = 0.2
-    nsims   = 2
-    seeds   = 2
+    nsims   = 10
+    seeds   = 10
 
     for test in np.linspace(mintest, maxtest, nsims):
         for seed in range(seeds):
