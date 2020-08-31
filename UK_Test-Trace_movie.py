@@ -22,7 +22,7 @@ def create_sim(test=0.0171, trace=0.47, seed=1):
     pop_scale    = int(total_pop/pop_size)
     pop_type     = 'hybrid'
     pop_infected = 1500
-    beta         = 0.00593*1.5
+    beta         = 0.00593*1.2
 
     asymp_factor = 2
     contacts     = {'h':3.0, 's':20, 'w':20, 'c':20}
@@ -129,11 +129,11 @@ if __name__ == '__main__':
     sims = []
 
     mintest = 0.0
-    maxtest = 1.0
-    nsims = 10
-    seeds = 1
+    maxtest = 0.2
+    nsims   = 2
+    seeds   = 1
 
-    for test in np.linspace(0,1.0,5):
+    for test in np.linspace(mintest, maxtest, nsims):
         for seed in range(seeds):
             sim = create_sim(test=test, seed=seed)
             sim.label = f'Test_prob={test}, seed={seed}'
