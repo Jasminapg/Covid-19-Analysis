@@ -56,10 +56,10 @@ if plot_movie:
     frames = [] # Initialize the frames
     count = 0
     for i in range(nsims): # Loop over the frames
-        print(f'Plotting {i}, testing = {test_pct[i]}%...')
         if i not in inds:
-            print('  ...skipping')
+            print('  ...skipping {i}')
         else:
+            print(f'Plotting {i}, testing = {test_pct[i]}%...')
             count += 1
             handles = []
             l2 = 'Mean of individual runs' if i==0 else None
@@ -72,10 +72,10 @@ if plot_movie:
             pl.xlim(xlims) # Set x-axis limits
             pl.ylim(ylims) # Set y-axis limits
             kwargs = {'transform':pl.gca().transAxes, 'horizontalalignment':'center'} # Set the "title" properties
-            title = pl.text(0.5, 1.05, f'Symptomatic testing rate after August 1st: {test_pct[i]:0.1f}%', **kwargs) # Unfortunately pl.title() can't be dynamically updated
+            title = pl.text(0.5, 1.05, f'Symptomatic testing rate after August 1st:\n{test_pct[i]:0.1f}%', **kwargs) # Unfortunately pl.title() can't be dynamically updated
             handles.append(title)
-            pl.xlabel('Date')
-            pl.ylabel('New infections')
+            pl.xlabel('Date', fontweight='bold')
+            pl.ylabel('New infections per day', fontweight='bold')
             pl.legend()
             sc.commaticks()
 
