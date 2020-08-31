@@ -52,7 +52,7 @@ inds = low_inds[::1].tolist() + med_inds[::2].tolist() + high_inds[::10].tolist(
 
 # Actually plot
 if plot_movie:
-    fig = pl.figure(figsize=(10,8)) # Create a new figure
+    fig = pl.figure(figsize=(10,6)) # Create a new figure
     frames = [] # Initialize the frames
     count = 0
     for i in range(nsims): # Loop over the frames
@@ -71,7 +71,7 @@ if plot_movie:
                 handles.append(plt[0]) # 0 since returns a list...why
             pl.xlim(xlims) # Set x-axis limits
             pl.ylim(ylims) # Set y-axis limits
-            kwargs = {'transform':pl.gca().transAxes, 'horizontalalignment':'center', 'fontsize':18} # Set the "title" properties
+            kwargs = {'transform':pl.gca().transAxes, 'horizontalalignment':'center', 'fontsize':14} # Set the "title" properties
             title = pl.text(0.5, 1.02, f'Symptomatic testing rate after August 1st: {test_pct[i]:0.1f}%', **kwargs) # Unfortunately pl.title() can't be dynamically updated
             handles.append(title)
             pl.xlabel('Date', fontweight='bold')
