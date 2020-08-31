@@ -1,11 +1,9 @@
 import os
 import sciris as sc
 import numpy as np
-from datetime import datetime
+import covasim as cv
 
-start = datetime.strptime("2020-01-21", "%Y-%m-%d")
-september = datetime.strptime("2020-09-01", "%Y-%m-%d")
-t = (september - start).days
+t = cv.daydiff('2020-01-21', '2020-09-01')
 
 scenarios = ['low_comp', 'high_comp', 'low_comp_notschools', 'high_comp_notschools']
 
