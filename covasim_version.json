@@ -1,14 +1,14 @@
 {
   "covasim": {
-    "version": "1.4.7",
-    "branch": "Git branch N/A",
-    "hash": "Git has",
-    "date": "Git date N/A"
+    "version": "1.5.2",
+    "branch": "develop",
+    "hash": "ed3a725",
+    "date": "2020-08-28T22:32:37-07:00"
   },
   "called_by": {
-    "branch": "master",
-    "hash": "2a12fbe",
-    "date": "\n2020-08-10 07:37:04 +0100",
-    "filename": "/home/ww/Local/jasmina-phase/Covid-19-Analysis/N/A"
+    "branch": "Git branch N/A",
+    "hash": "Git has",
+    "date": "Git date N/A",
+    "filename": "/software/anaconda3/lib/python3.7/site-packages/spyder_kernels/customize/spydercustomize.py"
   }
 }
