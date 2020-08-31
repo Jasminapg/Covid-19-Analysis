@@ -82,7 +82,7 @@ if plot_movie:
             title = pl.text(0.5, 1.02, f'Symptomatic testing rate after August 1st: {test_pct[i]:0.1f}%', **kwargs) # Unfortunately pl.title() can't be dynamically updated
             handles.append(title)
             pl.xlabel('Date', fontweight='bold')
-            pl.ylabel('New infections per day', fontweight='bold')
+            pl.ylabel('New infections', fontweight='bold')
             pl.legend()
             sc.commaticks()
 
