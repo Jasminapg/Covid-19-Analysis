@@ -12,6 +12,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--test", type=float, default=0.0171)
 parser.add_argument("--trace", type=float, default=0.47)
 parser.add_argument("--scenario", type=int, default=0)
+parser.add_argument("--samples", type=int, default=12)
 args = parser.parse_args()
 
 pl.switch_backend('agg')
@@ -111,7 +112,7 @@ elif scenario == 'high_comp':
 # Community contacts reduction by 12% means 80% of normal during termtime and 62% during holidays from 24th July 
 # Schools contacts normal
 # masks NOT in secondary schools from 1st September
-if scenario == 'low_comp_notschools':
+elif scenario == 'low_comp_notschools':
     h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.00, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29]
     s_beta_changes = [1.00, 0.90, 0.02, 0.02, 0.02, 0.21, 0.36, 0.02, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00]
     w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50]
@@ -128,7 +129,7 @@ elif scenario == 'high_comp_notschools':
     c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.50, 0.68, 0.53, 0.68, 0.53, 0.68, 0.53, 0.63, 0.53, 0.68, 0.53, 0.68, 0.53, 0.68, 0.53, 0.68, 0.53]
 
 else:
-    print(f'Scenario {scenario} not recognised')
+    raise ValueError(f'Scenario {scenario} not recognised')
 
 # Define the beta changes
 h_beta = cv.change_beta(days=beta_days, changes=h_beta_changes, layers='h')
@@ -234,7 +235,7 @@ if __name__ == '__main__':
     noise = 0.00
 
     msim = cv.MultiSim(base_sim=sim) # Create using your existing sim as the base
-    msim.run(reseed=True, noise=noise, n_runs=12, keep_people=True) # Run with uncertainty
+    msim.run(reseed=True, noise=noise, n_runs=args.samples, keep_people=True) # Run with uncertainty
 
     # Recalculate R_eff with a larger window
     for sim in msim.sims:
@@ -252,7 +253,8 @@ if __name__ == '__main__':
     except:
         pass
     outfile = "%s/test%s-trace%s.obj" % (scenario, args.test, args.trace)
-    sc.saveobj(outfile, sc.objdict((("args", args), ("results", msim.results))))
+    msim.args = args
+    sc.saveobj(outfile, sc.objdict((("args", args), ("msim", msim.results), ("sims", list(sim.results for sim in msim.sims)))))
 
     # Save the key figures
     plot_customizations = dict(
