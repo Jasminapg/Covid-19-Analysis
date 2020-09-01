@@ -42,9 +42,6 @@ if plot_diagnostic:
         for j in range(seeds):
             pl.plot(s0.tvec, results[i,j,:])
 
-xlims = [s0.tvec[0], s0.tvec[-1]]
-ylims = [0, results.max()]
-
 dur = 10 # Duration of symptoms
 mintest = 0.0
 maxtest = 0.2
@@ -52,10 +49,19 @@ test_vals = np.linspace(mintest, maxtest, nsims) # TODO: remove duplication
 test_pct = (1-(1-test_vals)**dur)*100
 
 # Trim indices
-low_inds = sc.findinds(test_pct<=4)
-med_inds = sc.findinds(np.logical_and(test_pct>4, test_pct<=20))
-high_inds = sc.findinds(test_pct>20)
-inds = low_inds[::1].tolist() + med_inds[::2].tolist() + high_inds[::10].tolist()
+only_high_testing = True
+if not only_high_testing:
+    low_inds = sc.findinds(test_pct<=4)
+    med_inds = sc.findinds(np.logical_and(test_pct>4, test_pct<=20))
+    high_inds = sc.findinds(test_pct>20)
+    inds = low_inds[::1].tolist() + med_inds[::2].tolist() + high_inds[::10].tolist()
+else:
+    med_inds = sc.findinds(np.logical_and(test_pct>28, test_pct<=50))
+    high_inds = sc.findinds(test_pct>50)
+    inds = med_inds[::2].tolist() + high_inds[::8].tolist()
+
+xlims = [s0.tvec[0], s0.tvec[-1]]
+ylims = [0, results[inds,:,:].max()]
 
 # Actually plot
 if plot_movie:
