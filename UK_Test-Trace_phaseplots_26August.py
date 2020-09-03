@@ -28,7 +28,7 @@ verbose = 1
 seed    = 1
 
 #scenario = ['low_comp', 'high_comp', 'low_comp_notschools', 'high_comp_notschools'][args.scenario]
-scenarios = ['no_masks', 'low_comp', 'med_comp', 'high_comp', 'low_comp_notschools', 'med_comp_notschools', 'high_comp_notschools'][args.scenario] # Set a number to pick a scenario from the available options
+scenario = ['no_masks', 'low_comp', 'med_comp', 'high_comp', 'low_comp_notschools', 'med_comp_notschools', 'high_comp_notschools'][args.scenario] # Set a number to pick a scenario from the available options
 tti_scen = ['current', 'test-trace'][1] # Ditt0
 
 version   = 'v1'
@@ -99,7 +99,7 @@ if scenario == 'no_masks':
 # Community contacts reduction by 15% means 60% of normal during termtime and 51% during holidays from 24th July 
 # Schools contacts reduction by 15% means 77% of normal during termtime from 1st Sep
 # masks in secondary schools from 1st September
-if scenario == 'low_comp':
+elif scenario == 'low_comp':
     
     h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.00, 1.00, 1.29, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29]
     s_beta_changes = [1.00, 0.90, 0.02, 0.02, 0.02, 0.23, 0.38, 0.00, 0.00, 0.77, 0.00, 0.77, 0.00, 0.77, 0.00, 0.77, 0.00, 0.77, 0.00, 0.77, 0.00, 0.77, 0.00, 0.77, 0.00]
@@ -129,7 +129,7 @@ elif scenario == 'high_comp':
 # Low EC of masks in community and schools
 # Community contacts reduction by 15% means 60% of normal during termtime and 51% during holidays from 24th July 
 # masks NOT in secondary schools from 1st September
-if scenario == 'low_comp_notschools':
+elif scenario == 'low_comp_notschools':
     h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.00, 1.00, 1.29, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29]
     s_beta_changes = [1.00, 0.90, 0.02, 0.02, 0.02, 0.23, 0.38, 0.00, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00]
     w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.50, 0.50, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40]
@@ -246,8 +246,8 @@ elif tti_scen == 'test-trace':
         cv.test_prob(symp_prob=s_prob_may, asymp_prob=0.00075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tt_day, end_day=tti_day-1, test_delay=t_delay),
         cv.test_prob(symp_prob=s_prob_june, asymp_prob=0.00075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tti_day, end_day=tti_day_july-1, test_delay=t_delay),
         cv.test_prob(symp_prob=s_prob_july, asymp_prob=0.00075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tti_day_july, end_day=tti_day_august-1, test_delay=t_delay),
-        cv.test_prob(symp_prob=s_prob_august, asymp_prob=0.00075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tti_day_august, end_day=tti_day_sep, test_delay=t_delay),
-        cv.test_prob(symp_prob=s_prob_sept, asymp_prob=0.00075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tti_day_sep, test_delay=t_delay),
+        cv.test_prob(symp_prob=s_prob_august, asymp_prob=0.00075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tti_day_august, end_day=tti_day_sept-1, test_delay=t_delay),
+        cv.test_prob(symp_prob=s_prob_sept, asymp_prob=0.00075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tti_day_sept, test_delay=t_delay),
         cv.dynamic_pars({'iso_factor': {'days': te_day, 'vals': iso_vals}}),
         cv.contact_tracing(trace_probs=t_probs_june, trace_time=trace_d_1, start_day=tti_day, end_day=tti_day_july-1),
         cv.contact_tracing(trace_probs=t_probs_july, trace_time=trace_d_1, start_day=tti_day_july, end_day=tti_day_august-1),
