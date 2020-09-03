@@ -10,7 +10,7 @@ scenarios = ['no_masks', 'low_comp', 'med_comp', 'high_comp', 'low_comp_notschoo
 
 scenario = 0
 trace = 0.47
-for test, expected in [(0.0277, 110000), (0.12, 4000)]:
+for test, expected in [(0.0277, 60000), (0.12, 2000)]:
     ## run the simulation
     cmd = "python UK_Test-Trace_phaseplots_26August.py --samples 12 --scenario %s --test %.02f --trace %.02f" % (scenario, test, trace)
     os.system(cmd)
