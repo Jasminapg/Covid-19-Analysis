@@ -27,7 +27,8 @@ do_show = 1
 verbose = 1
 seed    = 1
 
-scenario = ['low_comp', 'high_comp', 'low_comp_notschools', 'high_comp_notschools'][args.scenario] # Set a number to pick a scenario from the available options
+#scenario = ['low_comp', 'high_comp', 'low_comp_notschools', 'high_comp_notschools'][args.scenario]
+scenarios = ['no_masks', 'low_comp', 'med_comp', 'high_comp', 'low_comp_notschools', 'med_comp_notschools', 'high_comp_notschools'][args.scenario] # Set a number to pick a scenario from the available options
 tti_scen = ['current', 'test-trace'][1] # Ditt0
 
 version   = 'v1'
@@ -48,7 +49,8 @@ pop_type     = 'hybrid'
 #kids infectiousness the same as adults
 #model fitted using optuna to find pop_infected and beta and s_prob_X for months we have data
 pop_infected = 1500
-beta         = 0.00593
+beta         = 0.0071967
+quar_factor = dict(h=0.7, s=0.0, w=0.2, c=0.2)
 
 asymp_factor = 2
 contacts     = {'h':3.0, 's':20, 'w':20, 'c':20}
@@ -73,9 +75,6 @@ sim['prognoses']['sus_ORs'][1] = 1.0 # ages 10-20
 
 #%% Interventions
 
-
-# Create the baseline simulation
-
 tc_day = sim.day('2020-03-16') #intervention of some testing (tc) starts on 16th March and we run until 1st April when it increases
 te_day = sim.day('2020-04-01') #intervention of some testing (te) starts on 1st April and we run until 1st May when it increases
 tt_day = sim.day('2020-05-01') #intervention of increased testing (tt) starts on 1st May
@@ -83,50 +82,78 @@ tti_day= sim.day('2020-06-01') #intervention of tracing and enhanced testing (tt
 ti_day = sim.day('2021-12-20') #schools interventions end date in December 2021
 tti_day_july= sim.day('2020-07-01') #intervention of tracing and enhanced testing (tti) at different levels starts on 1st July
 tti_day_august= sim.day('2020-08-01') #intervention of tracing and enhanced testing (tti) at different levels starts on 1st August
-
+tti_day_sept= sim.day('2020-09-01')
 
 #change parameters here for different schools opening strategies with society opening
-beta_days = ['2020-02-14', '2020-03-16', '2020-03-23', '2020-04-30', '2020-05-15', '2020-06-01', '2020-06-15', '2020-07-22', '2020-09-02', '2020-10-28', '2020-11-01', '2020-12-23', '2021-01-03', '2021-02-17', '2021-02-21', '2021-04-01', '2021-04-17', '2021-05-31', '2021-06-04', '2021-07-20', '2021-09-01', '2021-10-30', '2021-11-10', ti_day]
+beta_days = ['2020-02-14', '2020-03-16', '2020-03-23', '2020-04-30', '2020-05-15', '2020-06-01', '2020-06-15', '2020-07-22', '2020-08-01', '2020-09-02', '2020-10-28', '2020-11-01', '2020-12-23', '2021-01-03', '2021-02-17', '2021-02-21', '2021-04-01', '2021-04-17', '2021-05-31', '2021-06-04', '2021-07-20', '2021-09-01', '2021-10-30', '2021-11-10', ti_day]
+###no masks and assuming schools go back to 90%; workplaces to 50% and community to 70% of pre-COVID level
+###calibarted until 28th August 2020
+if scenario == 'no_masks':
+###no masks
+    h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.00, 1.00, 1.29, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29]
+    s_beta_changes = [1.00, 0.90, 0.02, 0.02, 0.02, 0.23, 0.38, 0.00, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00]
+    w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.40, 0.40, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40]
+    c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.50, 0.50, 0.70, 0.60, 0.70, 0.60, 0.70, 0.60, 0.70, 0.60, 0.70, 0.60, 0.70, 0.60, 0.70, 0.60, 0.70, 0.60]
 
-# Low compliance to masks in community and schools
-# Community contacts reduction by 12% means 80% of normal during termtime and 62% during holidays from 24th July 
+# Low EC of masks in community and schools
+# Community contacts reduction by 15% means 60% of normal during termtime and 51% during holidays from 24th July 
 # Schools contacts reduction by 15% means 77% of normal during termtime from 1st Sep
 # masks in secondary schools from 1st September
 if scenario == 'low_comp':
-    h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.00, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29]
-    s_beta_changes = [1.00, 0.90, 0.02, 0.02, 0.02, 0.23, 0.38, 0.00, 0.77, 0.00, 0.77, 0.00, 0.77, 0.00, 0.77, 0.00, 0.77, 0.00, 0.77, 0.00, 0.77, 0.00, 0.77, 0.00]
-    w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50]
-    c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.50, 0.80, 0.62, 0.80, 0.62, 0.80, 0.62, 0.80, 0.62, 0.80, 0.62, 0.80, 0.62, 0.80, 0.62, 0.80, 0.62]
+    
+    h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.00, 1.00, 1.29, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29]
+    s_beta_changes = [1.00, 0.90, 0.02, 0.02, 0.02, 0.23, 0.38, 0.00, 0.00, 0.77, 0.00, 0.77, 0.00, 0.77, 0.00, 0.77, 0.00, 0.77, 0.00, 0.77, 0.00, 0.77, 0.00, 0.77, 0.00]
+    w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.40, 0.40, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40]
+    c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.425, 0.425, 0.60, 0.51, 0.60, 0.51, 0.60, 0.51, 0.60, 0.51, 0.60, 0.51, 0.60, 0.51, 0.60, 0.51, 0.60, 0.51]
 
-# High compliance to masks in community and schools
-# Community contacts reduction by 24% means 68% of normal during termtime and 53% during holidays from 24th Jul
+# moderate EC of masks in community and schools
+# Community contacts reduction by 30% means 49% of normal during termtime and 42% during holidays from 24th Jul
 # Schools contacts reduction by 30% means 63% of normal during termtime from 1st Sep
 # masks in secondary schools from 1st September
+elif scenario == 'med_comp':
+    h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.00, 1.00, 1.29, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29]
+    s_beta_changes = [1.00, 0.90, 0.02, 0.02, 0.02, 0.23, 0.38, 0.00, 0.00, 0.63, 0.00, 0.63, 0.00, 0.63, 0.00, 0.63, 0.00, 0.63, 0.00, 0.63, 0.00, 0.63, 0.00, 0.63, 0.00]
+    w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.40, 0.40, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40]
+    c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.425, 0.425, 0.49, 0.42, 0.49, 0.42, 0.49, 0.42, 0.49, 0.42, 0.49, 0.42, 0.49, 0.42, 0.49, 0.42, 0.49, 0.42]
+
+# high EC of masks in community and schools
+# Community contacts reduction by 50% means 35% of normal during termtime and 30% during holidays from 24th Jul
+# Schools contacts reduction by 50% means 45% of normal during termtime from 1st Sep
+# masks in secondary schools from 1st September
 elif scenario == 'high_comp':
-    h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.00, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29]
-    s_beta_changes = [1.00, 0.90, 0.02, 0.02, 0.02, 0.23, 0.38, 0.00, 0.63, 0.00, 0.63, 0.00, 0.63, 0.00, 0.63, 0.00, 0.63, 0.00, 0.63, 0.00, 0.63, 0.00, 0.63, 0.00]
-    w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50]
-    c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.50, 0.68, 0.53, 0.68, 0.53, 0.68, 0.53, 0.63, 0.53, 0.68, 0.53, 0.68, 0.53, 0.68, 0.53, 0.68, 0.53]
+    h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.00, 1.00, 1.29, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29]
+    s_beta_changes = [1.00, 0.90, 0.02, 0.02, 0.02, 0.23, 0.38, 0.00, 0.00, 0.45, 0.00, 0.45, 0.00, 0.45, 0.00, 0.45, 0.00, 0.45, 0.00, 0.45, 0.00, 0.45, 0.00, 0.45, 0.00]
+    w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.40, 0.40, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40]
+    c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.425, 0.425, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30]
 
-# Low compliance to masks in community and NOT in schools
-# Community contacts reduction by 12% means 80% of normal during termtime and 62% during holidays from 24th July 
-# Schools contacts normal
+# Low EC of masks in community and schools
+# Community contacts reduction by 15% means 60% of normal during termtime and 51% during holidays from 24th July 
 # masks NOT in secondary schools from 1st September
-elif scenario == 'low_comp_notschools':
-    h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.00, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29]
-    s_beta_changes = [1.00, 0.90, 0.02, 0.02, 0.02, 0.21, 0.36, 0.02, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00]
-    w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50]
-    c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.50, 0.80, 0.62, 0.80, 0.62, 0.80, 0.62, 0.80, 0.62, 0.80, 0.62, 0.80, 0.62, 0.80, 0.62, 0.80, 0.62]
+if scenario == 'low_comp_notschools':
+    h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.00, 1.00, 1.29, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29]
+    s_beta_changes = [1.00, 0.90, 0.02, 0.02, 0.02, 0.23, 0.38, 0.00, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00]
+    w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.50, 0.50, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40]
+    c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.425, 0.425, 0.60, 0.51, 0.60, 0.51, 0.60, 0.51, 0.60, 0.51, 0.60, 0.51, 0.60, 0.51, 0.60, 0.51, 0.60, 0.51]
 
-# High compliance to masks in community and NOT in schools
-# Community contacts reduction by 24% means 68% of normal during termtime and 53% during holidays from 24th Jul
-# Schools contacts normal
+# moderate EC of masks in community and schools
+# Community contacts reduction by 30% means 49% of normal during termtime and 42% during holidays from 24th Jul
 # masks NOT in secondary schools from 1st September
+elif scenario == 'med_comp_notschools':
+### Community contacts reduction by 30% means 63% of normal during termtime and 53% during holidays from 24th Jul
+    h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.00, 1.00, 1.29, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29]
+    s_beta_changes = [1.00, 0.90, 0.02, 0.02, 0.02, 0.23, 0.38, 0.00, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00]
+    w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.50, 0.50, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40]
+    c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.425, 0.425, 0.49, 0.42, 0.49, 0.42, 0.49, 0.42, 0.49, 0.42, 0.49, 0.42, 0.49, 0.42, 0.49, 0.42, 0.49, 0.42]
+
+# high EC of masks in community and schools
+# Community contacts reduction by 50% means 35% of normal during termtime and 30% during holidays from 24th July
+# masks in secondary schools from 1st September
 elif scenario == 'high_comp_notschools':
-    h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.00, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29]
-    s_beta_changes = [1.00, 0.90, 0.02, 0.02, 0.02, 0.23, 0.38, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00]
-    w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50, 0.60, 0.50]
-    c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.50, 0.68, 0.53, 0.68, 0.53, 0.68, 0.53, 0.63, 0.53, 0.68, 0.53, 0.68, 0.53, 0.68, 0.53, 0.68, 0.53]
+   
+    h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.00, 1.00, 1.29, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29]
+    s_beta_changes = [1.00, 0.90, 0.02, 0.02, 0.02, 0.23, 0.38, 0.00, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00]
+    w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.40, 0.40, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40]
+    c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.425, 0.425, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30]
 
 else:
     raise ValueError(f'Scenario {scenario} not recognised')
@@ -143,82 +170,89 @@ interventions = [h_beta, w_beta, s_beta, c_beta]
 if tti_scen == 'current':
 
     # Tracing and enhanced testing strategy of symptimatics from 1st June
-    # testing in March, May, June and July fitted during calibration 
-    # under current scenario assumed testing level to remain the same as in July
-    s_prob_march = 0.012
-    s_prob_april = 0.012
-    s_prob_may   = 0.0165
-    s_prob_june = 0.0171
-    s_prob_july = 0.0171
-    #under this scenario we assume testing levels in August and beyond are as in July i.e. (1-(1-0.0171)^10)*100=16%
-    s_prob_august = 0.0171
+    #testing in June remains the same as before June under this scenario
+    s_prob_march = 0.009
+    s_prob_april = 0.013
+    s_prob_may   = 0.026
+    s_prob_june = 0.02769
+    s_prob_july = 0.02769
+    s_prob_august = 0.02769
+    s_prob_sept = 0.02769
     t_delay       = 1.0
 
     iso_vals = [{k:0.1 for k in 'hswc'}]
 
-    # tracing level at 42% from June; 47% in July
-    # under current scenario assumed tracing level to remain the same as in July i.e 47%
+    #tracing level at 42.35% in June; 47.22% in July
     t_eff_june   = 0.42
     t_eff_july   = 0.47
     t_eff_august = 0.47
+    t_eff_sept   = 0.47
     t_probs_june = {k:t_eff_june for k in 'hwsc'}
     t_probs_july = {k:t_eff_july for k in 'hwsc'}
     t_probs_august = {k:t_eff_august for k in 'hwsc'}
+    t_probs_sep = {k:t_eff_sept for k in 'hwsc'}
     trace_d_1      = {'h':0, 's':1, 'w':1, 'c':2}
 
     #testing and isolation intervention
     interventions += [
-        cv.test_prob(symp_prob=0.0012, asymp_prob=0.0, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tc_day, end_day=te_day-1, test_delay=t_delay),
+        cv.test_prob(symp_prob=0.007, asymp_prob=0.0, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tc_day, end_day=te_day-1, test_delay=t_delay),
         cv.test_prob(symp_prob=s_prob_april, asymp_prob=0.0, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=te_day, end_day=tt_day-1, test_delay=t_delay),
         cv.test_prob(symp_prob=s_prob_may, asymp_prob=0.00075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tt_day, end_day=tti_day-1, test_delay=t_delay),
         cv.test_prob(symp_prob=s_prob_june, asymp_prob=0.00075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tti_day, end_day=tti_day_july-1, test_delay=t_delay),
         cv.test_prob(symp_prob=s_prob_july, asymp_prob=0.00075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tti_day_july, end_day=tti_day_august-1, test_delay=t_delay),
-        cv.test_prob(symp_prob=s_prob_august, asymp_prob=0.00075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tti_day_august, test_delay=t_delay),
+        cv.test_prob(symp_prob=s_prob_august, asymp_prob=0.00075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tti_day_august, end_day=tti_day_sep, test_delay=t_delay),
+        cv.test_prob(symp_prob=s_prob_sept, asymp_prob=0.00075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tti_day_sep, test_delay=t_delay),
         cv.dynamic_pars({'iso_factor': {'days': te_day, 'vals': iso_vals}}),
         cv.contact_tracing(trace_probs=t_probs_june, trace_time=trace_d_1, start_day=tti_day, end_day=tti_day_july-1),
         cv.contact_tracing(trace_probs=t_probs_july, trace_time=trace_d_1, start_day=tti_day_july, end_day=tti_day_august-1),
-        cv.contact_tracing(trace_probs=t_probs_august, trace_time=trace_d_1, start_day=tti_day_august),
+        cv.contact_tracing(trace_probs=t_probs_august, trace_time=trace_d_1, start_day=tti_day_august, end_day=tti_day_sept-1),
+        cv.contact_tracing(trace_probs=t_probs_sept, trace_time=trace_d_1, start_day=tti_day_sept),
       ]
-
+    
+    
 elif tti_scen == 'test-trace':
 
 # Tracing and enhanced testing strategy of symptimatics to change for phase plots
     #Phase plots=need to change s_prob_august and t_eff_august and plot R, new infections, deaths and diagnosis for different combinations of s_prob_august and t_eff_august
     
     #testing
-    s_prob_march = 0.012
-    s_prob_april = 0.012
-    s_prob_may   = 0.0165
-    s_prob_june = 0.0171
-    s_prob_july = 0.0171
-    #we want to vary s_prob_august to vary testing level
-    s_prob_august = args.test
+    
+    s_prob_march = 0.009
+    s_prob_april = 0.013
+    s_prob_may   = 0.026
+    s_prob_june = 0.02769
+    s_prob_july = 0.02769
+    s_prob_august = 0.02769
+    s_prob_sept = args.test
     t_delay       = 1.0
 
     iso_vals = [{k:0.1 for k in 'hswc'}]
 
-    #tracing level at 68% from June; 50% in July
-    #we want to vary t_eff_august to vary tracing level
+    #tracing level at 42.35% in June; 47.22% in July
     t_eff_june   = 0.42
     t_eff_july   = 0.47
-    t_eff_august = args.trace
+    t_eff_august = 0.47
+    t_eff_sept = args.trace
     t_probs_june = {k:t_eff_june for k in 'hwsc'}
     t_probs_july = {k:t_eff_july for k in 'hwsc'}
     t_probs_august = {k:t_eff_august for k in 'hwsc'}
+    t_probs_sept = {k:t_eff_sept for k in 'hwsc'}
     trace_d_1      = {'h':0, 's':1, 'w':1, 'c':2}
 
     #testing and isolation intervention
     interventions += [
-        cv.test_prob(symp_prob=0.012, asymp_prob=0.0, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tc_day, end_day=te_day-1, test_delay=t_delay),
+        cv.test_prob(symp_prob=0.007, asymp_prob=0.0, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tc_day, end_day=te_day-1, test_delay=t_delay),
         cv.test_prob(symp_prob=s_prob_april, asymp_prob=0.0, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=te_day, end_day=tt_day-1, test_delay=t_delay),
         cv.test_prob(symp_prob=s_prob_may, asymp_prob=0.00075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tt_day, end_day=tti_day-1, test_delay=t_delay),
         cv.test_prob(symp_prob=s_prob_june, asymp_prob=0.00075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tti_day, end_day=tti_day_july-1, test_delay=t_delay),
         cv.test_prob(symp_prob=s_prob_july, asymp_prob=0.00075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tti_day_july, end_day=tti_day_august-1, test_delay=t_delay),
-        cv.test_prob(symp_prob=s_prob_august, asymp_prob=0.00075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tti_day_august, test_delay=t_delay),
+        cv.test_prob(symp_prob=s_prob_august, asymp_prob=0.00075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tti_day_august, end_day=tti_day_sep, test_delay=t_delay),
+        cv.test_prob(symp_prob=s_prob_sept, asymp_prob=0.00075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tti_day_sep, test_delay=t_delay),
         cv.dynamic_pars({'iso_factor': {'days': te_day, 'vals': iso_vals}}),
         cv.contact_tracing(trace_probs=t_probs_june, trace_time=trace_d_1, start_day=tti_day, end_day=tti_day_july-1),
         cv.contact_tracing(trace_probs=t_probs_july, trace_time=trace_d_1, start_day=tti_day_july, end_day=tti_day_august-1),
-        cv.contact_tracing(trace_probs=t_probs_august, trace_time=trace_d_1, start_day=tti_day_august),
+        cv.contact_tracing(trace_probs=t_probs_august, trace_time=trace_d_1, start_day=tti_day_august, end_day=tti_day_sept-1),
+        cv.contact_tracing(trace_probs=t_probs_sept, trace_time=trace_d_1, start_day=tti_day_sept),
       ]
 
 else:
