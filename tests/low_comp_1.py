@@ -5,11 +5,12 @@ import covasim as cv
 
 t = cv.daydiff('2020-01-21', '2020-09-01')
 
-scenarios = ['low_comp', 'high_comp', 'low_comp_notschools', 'high_comp_notschools']
+#scenarios = ['low_comp', 'high_comp', 'low_comp_notschools', 'high_comp_notschools']
+scenarios = ['no_masks', 'low_comp', 'med_comp', 'high_comp', 'low_comp_notschools', 'med_comp_notschools', 'high_comp_notschools']
 
 scenario = 0
 trace = 0.47
-for test, expected in [(0.0171, 110000), (0.12, 4000)]:
+for test, expected in [(0.0277, 110000), (0.12, 4000)]:
     ## run the simulation
     cmd = "python UK_Test-Trace_phaseplots_26August.py --samples 12 --scenario %s --test %.02f --trace %.02f" % (scenario, test, trace)
     os.system(cmd)
