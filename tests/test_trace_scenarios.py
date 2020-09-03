@@ -5,7 +5,7 @@ import covasim as cv
 
 t = cv.daydiff('2020-01-21', '2020-09-01')
 
-scenarios = ['no_masks', 'low_comp', 'med_comp', 'high_comp', 'low_comp_notschools', 'med_comp_notschools', 'high_comp_notschools']
+scenarios = ['no_masks', 'low_comp', 'med_comp', 'low_comp_notschools', 'med_comp_notschools']
 
 testcases = [
 ## (scenario, trace, test, infections)
