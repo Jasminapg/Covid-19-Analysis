@@ -17,7 +17,7 @@ testcases = [
 
 for scenario, trace, test, expected in testcases:
     ## run the simulation
-    cmd = "python UK_Test-Trace_phaseplots_26August.py --samples 2 --scenario %s --test %.02f --trace %.02f" % (scenario, test, trace)
+    cmd = "python UK_Test-Trace_phaseplots_26August.py --samples 12 --scenario %s --test %.02f --trace %.02f" % (scenario, test, trace)
     os.system(cmd)
 
     ## load the results
