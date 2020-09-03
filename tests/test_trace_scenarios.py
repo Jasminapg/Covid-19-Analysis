@@ -9,10 +9,10 @@ scenarios = ['no_masks', 'low_comp', 'med_comp', 'low_comp_notschools', 'med_com
 
 testcases = [
 ## (scenario, trace, test, infections)
-    (0, 0.47, 0.03, 60000),
-    (0, 0.47, 0.12, 2000),
-    (1, 0.47, 0.02, 110000),
-    (1, 0.47, 0.12, 4000),
+    (0, 0.47, 0.03, 100000),
+    (0, 0.47, 0.12, 12000),
+    (1, 0.47, 0.03, 55000),
+    (1, 0.47, 0.12, 5800),
 ]
 
 for scenario, trace, test, expected in testcases:
