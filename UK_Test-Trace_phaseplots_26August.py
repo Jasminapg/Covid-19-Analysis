@@ -18,7 +18,7 @@ args = parser.parse_args()
 pl.switch_backend('agg')
 
 # Check version
-cv.check_version('1.4.7')
+cv.check_version('1.5.2')
 cv.git_info('covasim_version.json')
 
 do_plot = 1
@@ -28,7 +28,7 @@ verbose = 1
 seed    = 1
 
 #scenario = ['low_comp', 'high_comp', 'low_comp_notschools', 'high_comp_notschools'][args.scenario]
-scenario = ['no_masks', 'low_comp', 'med_comp', 'high_comp', 'low_comp_notschools', 'med_comp_notschools', 'high_comp_notschools'][args.scenario] # Set a number to pick a scenario from the available options
+scenario = ['no_masks', 'low_comp', 'med_comp', 'low_comp_notschools', 'med_comp_notschools'][args.scenario] # Set a number to pick a scenario from the available options
 tti_scen = ['current', 'test-trace'][1] # Ditt0
 
 version   = 'v1'
@@ -93,7 +93,7 @@ if scenario == 'no_masks':
     h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.00, 1.00, 1.29, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29]
     s_beta_changes = [1.00, 0.90, 0.02, 0.02, 0.02, 0.23, 0.38, 0.00, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00]
     w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.40, 0.40, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40]
-    c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.50, 0.50, 0.70, 0.60, 0.70, 0.60, 0.70, 0.60, 0.70, 0.60, 0.70, 0.60, 0.70, 0.60, 0.70, 0.60, 0.70, 0.60]
+    c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.425, 0.425, 0.70, 0.60, 0.70, 0.60, 0.70, 0.60, 0.70, 0.60, 0.70, 0.60, 0.70, 0.60, 0.70, 0.60, 0.70, 0.60]
 
 # Low EC of masks in community and schools
 # Community contacts reduction by 15% means 60% of normal during termtime and 51% during holidays from 24th July 
@@ -120,11 +120,11 @@ elif scenario == 'med_comp':
 # Community contacts reduction by 50% means 35% of normal during termtime and 30% during holidays from 24th Jul
 # Schools contacts reduction by 50% means 45% of normal during termtime from 1st Sep
 # masks in secondary schools from 1st September
-elif scenario == 'high_comp':
-    h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.00, 1.00, 1.29, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29]
-    s_beta_changes = [1.00, 0.90, 0.02, 0.02, 0.02, 0.23, 0.38, 0.00, 0.00, 0.45, 0.00, 0.45, 0.00, 0.45, 0.00, 0.45, 0.00, 0.45, 0.00, 0.45, 0.00, 0.45, 0.00, 0.45, 0.00]
-    w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.40, 0.40, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40]
-    c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.425, 0.425, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30]
+#elif scenario == 'high_comp':
+#    h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.00, 1.00, 1.29, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29]
+#    s_beta_changes = [1.00, 0.90, 0.02, 0.02, 0.02, 0.23, 0.38, 0.00, 0.00, 0.45, 0.00, 0.45, 0.00, 0.45, 0.00, 0.45, 0.00, 0.45, 0.00, 0.45, 0.00, 0.45, 0.00, 0.45, 0.00]
+#    w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.40, 0.40, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40]
+#    c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.425, 0.425, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30]
 
 # Low EC of masks in community and schools
 # Community contacts reduction by 15% means 60% of normal during termtime and 51% during holidays from 24th July 
@@ -148,12 +148,12 @@ elif scenario == 'med_comp_notschools':
 # high EC of masks in community and schools
 # Community contacts reduction by 50% means 35% of normal during termtime and 30% during holidays from 24th July
 # masks in secondary schools from 1st September
-elif scenario == 'high_comp_notschools':
+#elif scenario == 'high_comp_notschools':
    
-    h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.00, 1.00, 1.29, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29]
-    s_beta_changes = [1.00, 0.90, 0.02, 0.02, 0.02, 0.23, 0.38, 0.00, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00]
-    w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.40, 0.40, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40]
-    c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.425, 0.425, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30]
+#    h_beta_changes = [1.00, 1.00, 1.29, 1.29, 1.29, 1.00, 1.00, 1.29, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29, 1.00, 1.29]
+#    s_beta_changes = [1.00, 0.90, 0.02, 0.02, 0.02, 0.23, 0.38, 0.00, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00, 0.90, 0.00]
+#    w_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.40, 0.40, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40, 0.50, 0.40]
+#    c_beta_changes = [0.90, 0.80, 0.20, 0.20, 0.20, 0.40, 0.50, 0.425, 0.425, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30, 0.35, 0.30]
 
 else:
     raise ValueError(f'Scenario {scenario} not recognised')
