@@ -9,15 +9,15 @@ scenarios = ['no_masks', 'low_comp', 'med_comp', 'low_comp_notschools', 'med_com
 
 testcases = [
 ## (scenario, trace, test, infections)
-    (0, 0.47, 0.03, 100000),
-    (0, 0.47, 0.12, 12000),
-    (1, 0.47, 0.03, 55000),
+    (0, 0.47, 0.03, 110000),
+    (0, 0.47, 0.12, 17000),
+    (1, 0.47, 0.03, 70000),
     (1, 0.47, 0.12, 5800),
 ]
 
 for scenario, trace, test, expected in testcases:
     ## run the simulation
-    cmd = "python UK_Test-Trace_phaseplots_26August.py --samples 12 --scenario %s --test %.02f --trace %.02f" % (scenario, test, trace)
+    cmd = "python UK_tradeoffs.py --samples 12 --scenario %s --test %.02f --trace %.02f" % (scenario, test, trace)
     os.system(cmd)
 
     ## load the results
