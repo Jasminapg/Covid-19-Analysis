@@ -10,7 +10,7 @@ import matplotlib as mplt
 # pl.switch_backend('agg')
 
 # Check version
-cv.check_version('1.5.2')
+cv.check_version('1.7.4')
 cv.git_info('covasim_version.json')
 
 mplt.rcParams['font.family'] = 'Roboto'
