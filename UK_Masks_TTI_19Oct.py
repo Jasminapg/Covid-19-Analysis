@@ -21,9 +21,6 @@ do_save = 1
 do_show = 0
 verbose = 1
 seed    = 1
-rescale = False
-pop_scale = 1
-
 
 scenario = ['med_comp'][0] # Set a number to pick a scenario from the available options
 tti_scen = ['current', 'optimal_med_comp', 'optimal_med_comp_work'][0] # Ditt0
