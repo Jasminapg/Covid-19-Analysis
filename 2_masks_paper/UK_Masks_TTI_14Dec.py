@@ -16,9 +16,9 @@ cv.check_version('2.0.0')
 cv.git_info('covasim_version.json')
 
 # Saving and plotting settings
-do_plot = 1
-do_save = 1
-save_sim = True
+do_plot = 0
+do_save = 0
+save_sim = 1
 do_show = 0
 verbose = 1
 seed    = 1
@@ -38,13 +38,9 @@ runoptions = ['quickfit', # Does a quick preliminary calibration. Quick to run, 
               'finialisefit', # Filters the 10,000 runs from the previous step, selects the best-fitting ones, and runs these
               'scens', # Takes the best-fitting runs and projects these forward under different mask and TTI assumptions
               ]
-whattorun = runoptions[1] #Select which of the above to run
+whattorun = runoptions[2] #Select which of the above to run
 
 # Filepaths
-version   = 'v1'
-date      = '2020nov29'
-folder    = f'results_FINAL_{date}'
-file_path = f'{folder}/phase_{version}' # Completed below
 data_path = '../UK_Covid_cases_august28.xlsx'
 resfolder = 'results'
 
@@ -233,7 +229,7 @@ if __name__ == '__main__':
         sims = []
         fitsummary = sc.loadobj(f'{resfolder}/fitsummary.obj')
         for bn, beta in enumerate(betas):
-            goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 162.5]
+            goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 126]
             sc.blank()
             print('---------------\n')
             print(f'Beta: {beta}, goodseeds: {len(goodseeds)}')
