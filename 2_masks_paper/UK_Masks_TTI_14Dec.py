@@ -52,7 +52,7 @@ data_end = '2020-08-28' # Final date for calibration
 # Create the baseline simulation
 ########################################################################
 
-def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None, end_day=None):
+def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None, end_day=None, verbose=0):
 
     # Set the parameters
     total_pop    = 67.86e6 # UK population size
@@ -77,6 +77,7 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
         contacts     = contacts,
         rescale      = True,
         rand_seed    = seed,
+        verbose      = verbose,
     )
 
     sim = cv.Sim(pars=pars, datafile=data_path, location='uk')
@@ -264,15 +265,15 @@ if __name__ == '__main__':
 
         for scenname, future_symp_test in scenarios.iteritems():
 
+            print('---------------\n')
+            print(f'Beginning scenario: {scenname}')
+            print('---------------\n')
+            sc.blank()
             sims_cur, sims_opt = [], []
             fitsummary = sc.loadobj(f'{resfolder}/fitsummary.obj')
 
             for bn, beta in enumerate(betas):
                 goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 163]
-                sc.blank()
-                print('---------------\n')
-                print(f'Beta: {beta}, goodseeds: {len(goodseeds)}')
-                print('---------------\n')
                 if len(goodseeds) > 0:
                     s_cur = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=None, end_day='2021-12-31')
                     s_opt = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=future_symp_test, end_day='2021-12-31')
@@ -294,14 +295,16 @@ if __name__ == '__main__':
             msim_opt.run()
 
             if save_sim:
-                msim_cur.save(f'{resfolder}/uk_sim_{scenario}_current.obj')
-                msim_opt.save(f'{resfolder}/uk_sim_{scenario}_optimal.obj')
+                msim_cur.save(f'{resfolder}/uk_sim_{scenname}_current.obj')
+                msim_opt.save(f'{resfolder}/uk_sim_{scenname}_optimal.obj')
             if do_plot:
                 msim_cur.reduce()
-                msim_cur.plot(to_plot=to_plot, do_save=do_save, do_show=False, fig_path=f'uk_{scenario}_current.png',
+                msim_cur.plot(to_plot=to_plot, do_save=do_save, do_show=False, fig_path=f'uk_{scenname}_current.png',
                           legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50, n_cols=2)
                 msim_cur.reduce()
-                msim_cur.plot(to_plot=to_plot, do_save=do_save, do_show=False, fig_path=f'uk_{scenario}_optimal.png',
+                msim_cur.plot(to_plot=to_plot, do_save=do_save, do_show=False, fig_path=f'uk_{scenname}_optimal.png',
                           legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50, n_cols=2)
+
+            print(f'... completed scenario: {scenname}')
 
 
