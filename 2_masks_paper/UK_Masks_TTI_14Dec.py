@@ -18,10 +18,11 @@ cv.git_info('covasim_version.json')
 # Saving and plotting settings
 do_plot = 1
 do_save = 1
+save_sim = True
 do_show = 0
 verbose = 1
 seed    = 1
-n_runs = 100
+n_runs = 200
 to_plot = sc.objdict({
     'Cumulative diagnoses': ['cum_diagnoses'],
     'Cumulative infections': ['cum_infections'],
@@ -140,12 +141,11 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
     tti_day_august= sim.day('2020-08-01') #intervention of tracing and enhanced testing (tti) at different levels starts on 1st August
     tti_day_sep= sim.day('2020-09-01') #intervention of tracing and enhanced testing (tti) at different levels starts on 1st August
 
-    s_prob_march = 0.012
-    s_prob_april = 0.012
-    s_prob_may   = 0.0165
-    s_prob_june = 0.0171
-    s_prob_july = 0.0171
-    s_prob_august = 0.0171
+    s_prob_april = 0.008
+    s_prob_may   = 0.03
+    s_prob_june = 0.02
+    s_prob_july = 0.02
+    s_prob_august = 0.02
     if future_symp_test is None: future_symp_test = s_prob_august
     t_delay       = 1.0
 
@@ -160,7 +160,7 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
 
     #testing and isolation intervention
     interventions += [
-        cv.test_prob(symp_prob=0.009, asymp_prob=0.0, symp_quar_prob=0.0, start_day=tc_day, end_day=te_day-1, test_delay=t_delay),
+        cv.test_prob(symp_prob=0.0075, asymp_prob=0.0, symp_quar_prob=0.0, start_day=tc_day, end_day=te_day-1, test_delay=t_delay),
         cv.test_prob(symp_prob=s_prob_april, asymp_prob=0.0, symp_quar_prob=0.0, start_day=te_day, end_day=tt_day-1, test_delay=t_delay),
         cv.test_prob(symp_prob=s_prob_may, asymp_prob=0.00075, symp_quar_prob=0.0, start_day=tt_day, end_day=tti_day-1, test_delay=t_delay),
         cv.test_prob(symp_prob=s_prob_june, asymp_prob=0.00075, symp_quar_prob=0.0, start_day=tti_day, end_day=tti_day_july-1, test_delay=t_delay),
@@ -187,7 +187,7 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
 ########################################################################
 if __name__ == '__main__':
 
-    betas = [i / 10000 for i in range(70, 80, 2)]
+    betas = [i / 10000 for i in range(72, 77, 1)]
 
     # Quick calibration
     if whattorun=='quickfit':
@@ -233,7 +233,7 @@ if __name__ == '__main__':
         sims = []
         fitsummary = sc.loadobj(f'{resfolder}/fitsummary.obj')
         for bn, beta in enumerate(betas):
-            goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 800]
+            goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 162.5]
             sc.blank()
             print('---------------\n')
             print(f'Beta: {beta}, goodseeds: {len(goodseeds)}')
@@ -244,6 +244,7 @@ if __name__ == '__main__':
                     sim = s0.copy()
                     sim['rand_seed'] = seed
                     sim.set_seed()
+                    sim.label = f"Sim {seed}"
                     sims.append(sim)
 
         msim = cv.MultiSim(sims)
