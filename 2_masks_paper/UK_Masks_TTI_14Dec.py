@@ -17,7 +17,7 @@ cv.git_info('covasim_version.json')
 
 # Saving and plotting settings
 do_plot = 0
-do_save = 0
+do_save = 1
 save_sim = 1
 do_show = 0
 verbose = 1
@@ -27,9 +27,7 @@ to_plot = sc.objdict({
     'Cumulative diagnoses': ['cum_diagnoses'],
     'Cumulative infections': ['cum_infections'],
     'New infections': ['new_infections'],
-    'Daily diagnoses': ['new_diagnoses'],
     'Cumulative deaths': ['cum_deaths'],
-    'Cumulative critical': ['cum_critical'],
 })
 
 # Define what to run
@@ -38,7 +36,7 @@ runoptions = ['quickfit', # Does a quick preliminary calibration. Quick to run, 
               'finialisefit', # Filters the 10,000 runs from the previous step, selects the best-fitting ones, and runs these
               'scens', # Takes the best-fitting runs and projects these forward under different mask and TTI assumptions
               ]
-whattorun = runoptions[2] #Select which of the above to run
+whattorun = runoptions[3] #Select which of the above to run
 
 # Filepaths
 data_path = '../UK_Covid_cases_august28.xlsx'
@@ -54,7 +52,7 @@ data_end = '2020-08-28' # Final date for calibration
 # Create the baseline simulation
 ########################################################################
 
-def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None, end_day=None):
+def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None, end_day=None):
 
     # Set the parameters
     total_pop    = 67.86e6 # UK population size
@@ -97,13 +95,13 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
                            })
 
     if not calibration:
-        if scenario == 'phased-june-full-sep-masks15':
+        if scenario == 'full-sep-masks15':
             sbv1, sbv2, wbv1, wbv2, cbv1, cbv2 = 0.765, 1.00, 0.595, 0.425, 0.765, 0.595
-        elif scenario == 'phased-june-full-sep-masks30':
+        elif scenario == 'full-sep-masks30':
             sbv1, sbv2, wbv1, wbv2, cbv1, cbv2 = 0.63,  0.70, 0.49,  0.35,  0.63,  0.49
-        elif scenario == 'phased-june-full-sep-masks15_notschools':
+        elif scenario == 'full-sep-masks15_notschools':
             sbv1, sbv2, wbv1, wbv2, cbv1, cbv2 = 0.90,  0.90, 0.595, 0.425, 0.765, 0.595
-        elif scenario == 'phased-june-full-sep-masks30_notschools':
+        elif scenario == 'full-sep-masks30_notschools':
             sbv1, sbv2, wbv1, wbv2, cbv1, cbv2 = 0.90,  0.70, 0.49,  0.35,  0.63,  0.49
 
         beta_scens = sc.odict({'2020-09-02': [1.00, sbv1, wbv1, cbv1],
@@ -121,10 +119,11 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
     else:
         beta_dict = beta_past
 
-    h_beta = cv.change_beta(days=beta_dict.keys(), changes=[c[0] for c in beta_dict.values()], layers='h')
-    s_beta = cv.change_beta(days=beta_dict.keys(), changes=[c[1] for c in beta_dict.values()], layers='s')
-    w_beta = cv.change_beta(days=beta_dict.keys(), changes=[c[2] for c in beta_dict.values()], layers='w')
-    c_beta = cv.change_beta(days=beta_dict.keys(), changes=[c[3] for c in beta_dict.values()], layers='c')
+    beta_days = list(beta_dict.keys())
+    h_beta = cv.change_beta(days=beta_days, changes=[c[0] for c in beta_dict.values()], layers='h')
+    s_beta = cv.change_beta(days=beta_days, changes=[c[1] for c in beta_dict.values()], layers='s')
+    w_beta = cv.change_beta(days=beta_days, changes=[c[2] for c in beta_dict.values()], layers='w')
+    c_beta = cv.change_beta(days=beta_days, changes=[c[3] for c in beta_dict.values()], layers='c')
 
     interventions = [h_beta, w_beta, s_beta, c_beta]
 
@@ -200,7 +199,7 @@ if __name__ == '__main__':
         msim.reduce()
         if do_plot:
             msim.plot(to_plot=to_plot, do_save=True, do_show=False, fig_path=f'uk.png',
-                      legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50)
+                      legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50, n_cols=2)
 
     # Full parameter/seed search
     elif whattorun=='fullfit':
@@ -229,7 +228,7 @@ if __name__ == '__main__':
         sims = []
         fitsummary = sc.loadobj(f'{resfolder}/fitsummary.obj')
         for bn, beta in enumerate(betas):
-            goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 126]
+            goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 163]
             sc.blank()
             print('---------------\n')
             print(f'Beta: {beta}, goodseeds: {len(goodseeds)}')
@@ -251,11 +250,58 @@ if __name__ == '__main__':
         if do_plot:
             msim.reduce()
             msim.plot(to_plot=to_plot, do_save=do_save, do_show=False, fig_path=f'uk.png',
-                      legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50)
+                      legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50, n_cols=2)
 
 
+    # Run scenarios with best-fitting seeds and parameters
+    elif whattorun=='scens':
 
-# Define scenarios
-#scenario = ['phased-june-full-sep-masks15', 'phased-june-full-sep-masks30', 'phased-june-full-sep-masks15_notschools', 'phased-june-full-sep-masks30_notschools'][3] # Set a number to pick a scenario from the available options
-#tti_scen = ['current', 'optimal_masks15', 'optimal_masks30', 'optimal_masks15_notschools', 'optimal_masks30_notschools'][0] # Ditt0
+        # Define scenario to run
+        scenarios = sc.odict({'full-sep-masks15': 0.15,
+                              'full-sep-masks30': 0.07,
+                              'full-sep-masks15_notschools': 0.17,
+                              'full-sep-masks30_notschools': 0.095})
+
+        for scenname, future_symp_test in scenarios.iteritems():
+
+            sims_cur, sims_opt = [], []
+            fitsummary = sc.loadobj(f'{resfolder}/fitsummary.obj')
+
+            for bn, beta in enumerate(betas):
+                goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 163]
+                sc.blank()
+                print('---------------\n')
+                print(f'Beta: {beta}, goodseeds: {len(goodseeds)}')
+                print('---------------\n')
+                if len(goodseeds) > 0:
+                    s_cur = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=None, end_day='2021-12-31')
+                    s_opt = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=future_symp_test, end_day='2021-12-31')
+                    for seed in goodseeds:
+                        sim_cur = s_cur.copy()
+                        sim_cur['rand_seed'] = seed
+                        sim_cur.set_seed()
+                        sim_cur.label = f"Sim {seed}"
+                        sims_cur.append(sim_cur)
+                        sim_opt = s_opt.copy()
+                        sim_opt['rand_seed'] = seed
+                        sim_opt.set_seed()
+                        sim_opt.label = f"Sim {seed}"
+                        sims_opt.append(sim_opt)
+
+            msim_cur = cv.MultiSim(sims_cur)
+            msim_cur.run()
+            msim_opt = cv.MultiSim(sims_opt)
+            msim_opt.run()
+
+            if save_sim:
+                msim_cur.save(f'{resfolder}/uk_sim_{scenario}_current.obj')
+                msim_opt.save(f'{resfolder}/uk_sim_{scenario}_optimal.obj')
+            if do_plot:
+                msim_cur.reduce()
+                msim_cur.plot(to_plot=to_plot, do_save=do_save, do_show=False, fig_path=f'uk_{scenario}_current.png',
+                          legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50, n_cols=2)
+                msim_cur.reduce()
+                msim_cur.plot(to_plot=to_plot, do_save=do_save, do_show=False, fig_path=f'uk_{scenario}_optimal.png',
+                          legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50, n_cols=2)
+
 
