@@ -321,9 +321,9 @@ if __name__ == '__main__':
 
         # Define scenario to run
         for scenname in scenarios:
-            cum_inf_summary = []
+            sweep_summary = {'cum_inf':[],'peak_inf':[],'cum_death':[]}
             for future_symp_test in symp_test_vals:
-                these_inf = []
+                cum_inf, peak_inf, cum_death = [], [], []
                 for future_t_eff in trace_eff_vals:
 
                     sc.blank()
@@ -347,8 +347,12 @@ if __name__ == '__main__':
                     msim = cv.MultiSim(sims)
                     msim.run(verbose=-1)
                     msim.reduce()
-                    these_inf.append(msim.results['cum_infections'].values[-1])
+                    cum_inf.append(msim.results['cum_infections'].values[-1])
+                    peak_inf.append(max(msim.results['new_infections'].values))
+                    cum_death.append(msim.results['cum_deaths'].values[-1])
 
-                cum_inf_summary.append(these_inf)
+                sweep_summary['cum_inf'].append(cum_inf)
+                sweep_summary['peak_inf'].append(peak_inf)
+                sweep_summary['cum_death'].append(cum_death)
 
-            sc.saveobj(f'{resfolder}/uk_tti_sweeps_{scenname}.obj', cum_inf_summary)
+            sc.saveobj(f'{resfolder}/uk_tti_sweeps_{scenname}.obj', sweep_summary)
