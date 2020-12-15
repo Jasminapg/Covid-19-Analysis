@@ -18,7 +18,7 @@ cv.git_info('covasim_version.json')
 # Saving and plotting settings
 do_plot = 0
 do_save = 1
-save_sim = 1
+save_sim = 0
 do_show = 0
 verbose = 1
 seed    = 1
@@ -35,8 +35,9 @@ runoptions = ['quickfit', # Does a quick preliminary calibration. Quick to run, 
               'fullfit',  # Searches over parameters and seeds (10,000 runs) and calculates the mismatch for each. Slow to run: ~1hr
               'finialisefit', # Filters the 10,000 runs from the previous step, selects the best-fitting ones, and runs these
               'scens', # Takes the best-fitting runs and projects these forward under different mask and TTI assumptions
+              'tti_sweeps', # Sweeps over future testing/tracing values to create data for heatmaps
               ]
-whattorun = runoptions[3] #Select which of the above to run
+whattorun = runoptions[4] #Select which of the above to run
 
 # Filepaths
 data_path = '../UK_Covid_cases_august28.xlsx'
@@ -52,7 +53,7 @@ data_end = '2020-08-28' # Final date for calibration
 # Create the baseline simulation
 ########################################################################
 
-def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None, end_day=None, verbose=0):
+def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None, future_t_eff=None, end_day=None, verbose=0):
 
     # Set the parameters
     total_pop    = 67.86e6 # UK population size
@@ -150,8 +151,10 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
     #tracing level at 42.35% in June; 47.22% in July
     t_eff_june   = 0.42
     t_eff_july   = 0.47
+    if future_t_eff is None: future_t_eff = t_eff_july
     t_probs_june = {k:t_eff_june for k in 'hwsc'}
     t_probs_july = {k:t_eff_july for k in 'hwsc'}
+    future_t_probs = {k:future_t_eff for k in 'hwsc'}
     trace_d_1      = {'h':0, 's':1, 'w':1, 'c':2}
 
     #testing and isolation intervention
@@ -165,8 +168,9 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
         cv.test_prob(symp_prob=future_symp_test, asymp_prob=0.00075, symp_quar_prob=0.0, start_day=tti_day_sep, test_delay=t_delay),
         cv.dynamic_pars({'iso_factor': {'days': te_day, 'vals': iso_vals}}),
         cv.contact_tracing(trace_probs=t_probs_june, trace_time=trace_d_1, start_day=tti_day, end_day=tti_day_july-1),
-        cv.contact_tracing(trace_probs=t_probs_july, trace_time=trace_d_1, start_day=tti_day_july),
-      ]
+        cv.contact_tracing(trace_probs=t_probs_july, trace_time=trace_d_1, start_day=tti_day_july, end_day=tti_day_sep-1),
+        cv.contact_tracing(trace_probs=future_t_probs, trace_time=trace_d_1, start_day=tti_day_sep),
+    ]
 
     # Finally, update the parameters
     sim.update_pars(interventions=interventions)
@@ -243,15 +247,15 @@ if __name__ == '__main__':
                     sim.label = f"Sim {seed}"
                     sims.append(sim)
 
-        msim = cv.MultiSim(sims)
-        msim.run()
+#        msim = cv.MultiSim(sims)
+#        msim.run()
 
-        if save_sim:
-            msim.save(f'{resfolder}/uk_sim.obj')
-        if do_plot:
-            msim.reduce()
-            msim.plot(to_plot=to_plot, do_save=do_save, do_show=False, fig_path=f'uk.png',
-                      legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50, n_cols=2)
+#        if save_sim:
+#            msim.save(f'{resfolder}/uk_sim.obj')
+#        if do_plot:
+#            msim.reduce()
+#            msim.plot(to_plot=to_plot, do_save=do_save, do_show=False, fig_path=f'uk.png',
+#                      legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50, n_cols=2)
 
 
     # Run scenarios with best-fitting seeds and parameters
@@ -308,3 +312,45 @@ if __name__ == '__main__':
             print(f'... completed scenario: {scenname}')
 
 
+    # Run scenarios with best-fitting seeds and parameters
+    elif whattorun=='tti_sweeps':
+
+        symp_test_vals = [0.25, 0.75]# np.linspace(0, 1, 3)
+        trace_eff_vals = [0.25, 0.75]#np.linspace(0, 1, 3)
+        scenarios = ['masks15', 'masks30','masks15_notschools','masks30_notschools'][0:2]
+        cum_inf_summary = {}
+
+        # Define scenario to run
+        for scenname in scenarios:
+            cum_inf_summary[scenname] = []
+            for future_symp_test in symp_test_vals:
+                these_inf = []
+                for future_t_eff in trace_eff_vals:
+
+                    print('---------------\n')
+                    print(f'Scenario: {scenname}, testing: {future_symp_test}, tracing: {future_t_eff}')
+                    print('---------------\n')
+                    sc.blank()
+                    sims = []
+                    fitsummary = sc.loadobj(f'{resfolder}/fitsummary.obj')
+
+                    for bn, beta in enumerate(betas):
+                        goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 125.5] # Take the best 10
+                        if len(goodseeds) > 0:
+                            s0 = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=None, end_day='2021-12-31')
+                            for seed in goodseeds:
+                                sim = s0.copy()
+                                sim['rand_seed'] = seed
+                                sim.set_seed()
+                                sim.label = f"Sim {seed}"
+                                sims.append(sim)
+
+                    msim = cv.MultiSim(sims)
+                    msim.run(verbose=-1)
+                    msim.reduce()
+                    these_inf.append(msim.results['cum_infections'].values[-1])
+                    print(f'... completed scenario: {scenname}')
+
+                cum_inf_summary[scenname].append(these_inf)
+
+        sc.saveobj(f'{resfolder}/uk_tti_sweeps.obj',cum_inf_summary)
