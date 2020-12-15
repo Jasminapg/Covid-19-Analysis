@@ -315,29 +315,28 @@ if __name__ == '__main__':
     # Run scenarios with best-fitting seeds and parameters
     elif whattorun=='tti_sweeps':
 
-        symp_test_vals = [0.25, 0.75]# np.linspace(0, 1, 3)
-        trace_eff_vals = [0.25, 0.75]#np.linspace(0, 1, 3)
-        scenarios = ['masks15', 'masks30','masks15_notschools','masks30_notschools'][0:2]
-        cum_inf_summary = {}
+        symp_test_vals = np.linspace(0, 1, 21)
+        trace_eff_vals = np.linspace(0, 1, 21)
+        scenarios = ['masks15'] #, 'masks30','masks15_notschools','masks30_notschools']
 
         # Define scenario to run
         for scenname in scenarios:
-            cum_inf_summary[scenname] = []
+            cum_inf_summary = []
             for future_symp_test in symp_test_vals:
                 these_inf = []
                 for future_t_eff in trace_eff_vals:
 
-                    print('---------------\n')
-                    print(f'Scenario: {scenname}, testing: {future_symp_test}, tracing: {future_t_eff}')
-                    print('---------------\n')
                     sc.blank()
+                    print('---------------')
+                    print(f'Scenario: {scenname}, testing: {future_symp_test}, tracing: {future_t_eff}')
+                    print('--------------- ')
                     sims = []
                     fitsummary = sc.loadobj(f'{resfolder}/fitsummary.obj')
 
                     for bn, beta in enumerate(betas):
                         goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 125.5] # Take the best 10
                         if len(goodseeds) > 0:
-                            s0 = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=future_symp_test, future_t_eff=future_t_eff,end_day='2021-12-31')
+                            s0 = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=future_symp_test, future_t_eff=future_t_eff, end_day='2021-12-31')
                             for seed in goodseeds:
                                 sim = s0.copy()
                                 sim['rand_seed'] = seed
@@ -349,8 +348,7 @@ if __name__ == '__main__':
                     msim.run(verbose=-1)
                     msim.reduce()
                     these_inf.append(msim.results['cum_infections'].values[-1])
-                    print(f'... completed scenario: {scenname}')
 
-                cum_inf_summary[scenname].append(these_inf)
+                cum_inf_summary.append(these_inf)
 
-        sc.saveobj(f'{resfolder}/uk_tti_sweeps.obj',cum_inf_summary)
+            sc.saveobj(f'{resfolder}/uk_tti_sweeps_{scenname}.obj', cum_inf_summary)
