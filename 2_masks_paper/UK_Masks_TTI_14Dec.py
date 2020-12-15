@@ -337,7 +337,7 @@ if __name__ == '__main__':
                     for bn, beta in enumerate(betas):
                         goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 125.5] # Take the best 10
                         if len(goodseeds) > 0:
-                            s0 = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=None, end_day='2021-12-31')
+                            s0 = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=future_symp_test, future_t_eff=future_t_eff,end_day='2021-12-31')
                             for seed in goodseeds:
                                 sim = s0.copy()
                                 sim['rand_seed'] = seed
