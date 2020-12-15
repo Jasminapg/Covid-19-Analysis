@@ -96,13 +96,13 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
                            })
 
     if not calibration:
-        if scenario == 'full-sep-masks15':
+        if scenario == 'masks15':
             sbv1, sbv2, wbv1, wbv2, cbv1, cbv2 = 0.765, 1.00, 0.595, 0.425, 0.765, 0.595
-        elif scenario == 'full-sep-masks30':
+        elif scenario == 'masks30':
             sbv1, sbv2, wbv1, wbv2, cbv1, cbv2 = 0.63,  0.70, 0.49,  0.35,  0.63,  0.49
-        elif scenario == 'full-sep-masks15_notschools':
+        elif scenario == 'masks15_notschools':
             sbv1, sbv2, wbv1, wbv2, cbv1, cbv2 = 0.90,  0.90, 0.595, 0.425, 0.765, 0.595
-        elif scenario == 'full-sep-masks30_notschools':
+        elif scenario == 'masks30_notschools':
             sbv1, sbv2, wbv1, wbv2, cbv1, cbv2 = 0.90,  0.70, 0.49,  0.35,  0.63,  0.49
 
         beta_scens = sc.odict({'2020-09-02': [1.00, sbv1, wbv1, cbv1],
@@ -258,10 +258,10 @@ if __name__ == '__main__':
     elif whattorun=='scens':
 
         # Define scenario to run
-        scenarios = sc.odict({'full-sep-masks15': 0.15,
-                              'full-sep-masks30': 0.07,
-                              'full-sep-masks15_notschools': 0.17,
-                              'full-sep-masks30_notschools': 0.095})
+        scenarios = sc.odict({'masks15': 0.15,
+                              'masks30': 0.07,
+                              'masks15_notschools': 0.17,
+                              'masks30_notschools': 0.095})
 
         for scenname, future_symp_test in scenarios.iteritems():
 
