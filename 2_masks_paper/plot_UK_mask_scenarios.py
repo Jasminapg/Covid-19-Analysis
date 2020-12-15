@@ -13,7 +13,7 @@ from matplotlib.collections import LineCollection
 figsfolder = 'figs'
 resfolder = 'results'
 scenarios = ['masks30_notschools', 'masks30', 'masks15_notschools', 'masks15']
-
+scenarios
 T = sc.tic()
 
 # Define plotting functions
@@ -27,7 +27,7 @@ def format_ax(ax, sim, key=None):
     pl.xlim([0, sim['n_days']])
     return
 
-def plotter(key, sims, ax, label='', ylabel='', low_q=0.025, high_q=0.975, startday=None):
+def plotter(key, sims, ax, label='', ylabel='', low_q=0.05, high_q=0.95, startday=None):
 
     color = cv.get_colors()[key.split('_')[1]]
 

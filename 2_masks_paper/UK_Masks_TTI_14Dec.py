@@ -317,7 +317,7 @@ if __name__ == '__main__':
 
         symp_test_vals = np.linspace(0, 1, 21)
         trace_eff_vals = np.linspace(0, 1, 21)
-        scenarios = ['masks15'] #, 'masks30','masks15_notschools','masks30_notschools']
+        scenarios = ['masks30','masks15_notschools'] #, ['masks15']'masks30_notschools']
 
         # Define scenario to run
         for scenname in scenarios:
