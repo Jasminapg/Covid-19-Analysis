@@ -79,11 +79,11 @@ dy = (1 - (nrows - 1) * ygapm - ygapb - ygapt) / nrows
 nplots = nrows * ncols
 ax = {}
 
-labels = {'current': ['24% symp. testing \n 47% contact testing ']*4,
-          'optimal': ['57% symp. testing \n 47% contact testing ',
-                      '46% symp. testing \n 47% contact testing ',
-                      '76% symp. testing \n 47% contact testing ',
-                      '68% symp. testing \n 47% contact testing ']}
+labels = {'current': ['24% symp. testing \n 47% contact tracing ']*4,
+          'optimal': ['57% symp. testing \n 47% contact tracing ',
+                      '46% symp. testing \n 47% contact tracing ',
+                      '76% symp. testing \n 47% contact tracing ',
+                      '68% symp. testing \n 47% contact tracing ']}
 for tti_scen in ['current', 'optimal']:
 
     pl.figure(figsize=(24, 16))
