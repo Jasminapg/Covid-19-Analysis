@@ -1,14 +1,14 @@
 {
   "covasim": {
-    "version": "1.5.2",
-    "branch": "develop",
-    "hash": "ed3a725",
-    "date": "2020-08-28T22:32:37-07:00"
+    "version": "2.0.0",
+    "branch": "Branch N/A",
+    "hash": "Hash N/",
+    "date": "Date N/A"
   },
   "called_by": {
-    "branch": "Git branch N/A",
-    "hash": "Git has",
-    "date": "Git date N/A",
-    "filename": "/software/anaconda3/lib/python3.7/site-packages/spyder_kernels/customize/spydercustomize.py"
+    "branch": "rs-masks",
+    "hash": "0f5341f",
+    "date": "2020-12-16 07:54:08 UTC",
+    "filename": "/home/robyn/Covid-19-Analysis/2_masks_paper/UK_Masks_TTI_14Dec.py"
   }
 }
