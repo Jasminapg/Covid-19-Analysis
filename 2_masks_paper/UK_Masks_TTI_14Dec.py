@@ -317,12 +317,13 @@ if __name__ == '__main__':
 
         symp_test_vals = np.linspace(0, 1, 21)
         trace_eff_vals = np.linspace(0, 1, 21)
-        scenarios = ['masks30_notschools'] #, ['masks30','masks15_notschools']['masks15']
+        scenarios = ['masks15','masks30','masks15_notschools','masks30_notschools'] 
 
         # Define scenario to run
         for scenname in scenarios:
             sweep_summary = {'cum_inf':[],'peak_inf':[],'cum_death':[]}
             for future_symp_test in symp_test_vals:
+                daily_test = np.round(1 - (1 - future_symp_test) ** (1 / 10), 3) if future_symp_test<1 else 0.4
                 cum_inf, peak_inf, cum_death = [], [], []
                 for future_t_eff in trace_eff_vals:
 
@@ -336,7 +337,7 @@ if __name__ == '__main__':
                     for bn, beta in enumerate(betas):
                         goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 125.5] # Take the best 10
                         if len(goodseeds) > 0:
-                            s0 = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=future_symp_test, future_t_eff=future_t_eff, end_day='2021-12-31')
+                            s0 = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=daily_test, future_t_eff=future_t_eff, end_day='2021-12-31')
                             for seed in goodseeds:
                                 sim = s0.copy()
                                 sim['rand_seed'] = seed
