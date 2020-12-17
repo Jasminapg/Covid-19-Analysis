@@ -51,6 +51,11 @@ for scen in ['masks15', 'masks30', 'masks15_notschools']: #scenarios:
     sweep_summaries[scen] = sc.loadobj(filepath)
 sweep_summaries['masks30_notschools'] = sweep_summaries['masks30']
 
+msim = sc.loadobj(f'{resfolder}/uk_sim.obj')
+msim.reduce()
+inf_til_aug = msim.results['cum_infections'].values[-1]
+death_til_aug = msim.results['cum_deaths'].values[-1]
+
 # Translate them into a dict of dataframes
 dfs = sc.odict()
 cbar_lims = {}
@@ -58,8 +63,15 @@ for res in resnames.keys():
     dfs[res] = sc.odict()
     for scen in scenarios:
         dfs[res][scen] = pd.DataFrame(sweep_summaries[scen][res])
-        dfs[res][scen] = dfs[res][scen] / 1e6 if res=='cum_inf' else dfs[res][scen] / 1e3
+        if res=='cum_inf':
+            dfs[res][scen] = (dfs[res][scen]-inf_til_aug) / 1e6
+        elif res=='cum_death':
+            dfs[res][scen] = (dfs[res][scen] - death_til_aug) / 1e3
+        else:
+            dfs[res][scen] /= 1e3
     cbar_lims[res] = max(dfs[res]['masks15_notschools'].max())
+
+#import traceback; traceback.print_exc(); import pdb; pdb.set_trace()
 
 # Add text
 headings = ["Masks in community, EC 30%",

@@ -317,7 +317,7 @@ if __name__ == '__main__':
 
         symp_test_vals = np.linspace(0, 1, 21)
         trace_eff_vals = np.linspace(0, 1, 21)
-        scenarios = ['masks30','masks30_notschools','masks15_notschools','masks15']
+        scenarios = ['masks15','masks30','masks15_notschools','masks30_notschools']
 
         # Define scenario to run
         for scenname in scenarios:
@@ -348,8 +348,12 @@ if __name__ == '__main__':
                     msim = cv.MultiSim(sims)
                     msim.run(verbose=-1)
                     msim.reduce()
+
+                    # Store results
+                    data_end_day = msim.sims[0].day(data_end)
+
                     cum_inf.append(msim.results['cum_infections'].values[-1])
-                    peak_inf.append(max(msim.results['new_infections'].values))
+                    peak_inf.append(max(msim.results['new_infections'].values[data_end_day:]))
                     cum_death.append(msim.results['cum_deaths'].values[-1])
 
                 sweep_summary['cum_inf'].append(cum_inf)
