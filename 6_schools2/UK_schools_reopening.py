@@ -18,7 +18,7 @@ cv.git_info('covasim_version.json')
 # Saving and plotting settings
 do_plot = 1
 do_save = 1
-save_sim = 0
+save_sim = 1
 do_show = 0
 verbose = 1
 seed    = 1
