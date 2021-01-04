@@ -1,0 +1,4 @@
+numba==0.48
+xlrd==1.2.0
+sciris==0.17.4
+covasim==1.5.0
