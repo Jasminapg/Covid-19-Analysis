@@ -37,7 +37,7 @@ runoptions = ['quickfit', # Does a quick preliminary calibration. Quick to run, 
               'fullfit',  # Searches over parameters and seeds (10,000 runs) and calculates the mismatch for each. Slow to run: ~1hr
               'finialisefit', # Filters the 10,000 runs from the previous step, selects the best-fitting ones, and runs these
               ]
-whattorun = runoptions[0] #Select which of the above to run
+whattorun = runoptions[1] #Select which of the above to run
 
 # Filepaths
 data_path = '../UK_Covid_cases_january03.xlsx'
