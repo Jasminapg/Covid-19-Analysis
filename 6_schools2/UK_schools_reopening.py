@@ -294,13 +294,13 @@ if __name__ == '__main__':
 
         scenarios = ['FNL', 'primaryPNL', 'staggeredPNL']
 
-        for scenname, future_symp_test in scenarios.iteritems():
+        for scenname in scenarios:
 
             print('---------------\n')
             print(f'Beginning scenario: {scenname}')
             print('---------------\n')
             sc.blank()
-            sims_cur, sims_opt = [], []
+            sims_cur = []
             fitsummary = sc.loadobj(f'{resfolder}/fitsummary.obj')
 
             for bn, beta in enumerate(betas):
