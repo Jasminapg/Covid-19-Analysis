@@ -68,7 +68,7 @@ def plotter(key, sims, ax, label='', ylabel='', low_q=0.05, high_q=0.95, subsamp
 
     sc.setylim()
 
-    datemarks = pl.array([sim.day('2020-03-01'),sim.day('2020-07-01'),sim.day('2020-11-01'),sim.day('2021-03-01')])
+    datemarks = pl.array([sim.day('2020-03-01'),sim.day('2020-06-01'),sim.day('2020-09-01'),sim.day('2020-12-01')])
     ax.set_xticks(datemarks)
     pl.ylabel(ylabel)
 
