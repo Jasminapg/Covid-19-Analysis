@@ -284,14 +284,6 @@ if __name__ == '__main__':
     # Run scenarios with best-fitting seeds and parameters
     elif whattorun=='scens':
 
-        # Define scenario to run
-        if scenario == 'FNL':
-            beta_s_jan4, beta_s_jan11, beta_s_jan18 = 0.02, 0.02, 0.02
-        elif scenario == 'primaryPNL':
-            beta_s_jan4, beta_s_jan11, beta_s_jan18 = sbv/2, sbv, sbv
-        elif scenario == 'staggeredPNL':
-            beta_s_jan4, beta_s_jan11, beta_s_jan18 = sbv/2, 0.41, sbv
-
         scenarios = ['FNL', 'primaryPNL', 'staggeredPNL']
 
         for scenname in scenarios:
