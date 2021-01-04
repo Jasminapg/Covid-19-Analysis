@@ -1,0 +1,475 @@
+'''
+UK scenarios for evaluating reopening of schools
+'''
+
+import sciris as sc
+import covasim as cv
+import pylab as pl
+import numpy as np
+import matplotlib as mplt
+import datetime as dt
+
+########################################################################
+# Settings and initialisation
+########################################################################
+# Check version
+cv.check_version('2.0.0')
+cv.git_info('covasim_version.json')
+
+# Saving and plotting settings
+do_plot = 1
+do_save = 1
+save_sim = 0
+do_show = 0
+verbose = 1
+seed    = 1
+n_runs = 200
+to_plot = sc.objdict({
+    'Cumulative diagnoses': ['cum_diagnoses'],
+    'Reproduction number': ['r_eff'],
+    'New infections': ['new_infections'],
+    'Cumulative deaths': ['cum_deaths'],
+})
+
+# Define what to run
+runoptions = ['quickfit', # Does a quick preliminary calibration. Quick to run, ~30s
+              'fullfit',  # Searches over parameters and seeds (10,000 runs) and calculates the mismatch for each. Slow to run: ~1hr
+              'finialisefit', # Filters the 10,000 runs from the previous step, selects the best-fitting ones, and runs these
+              'scens', # Takes the best-fitting runs and projects these forward under different mask and TTI assumptions
+              'tti_sweeps', # Sweeps over future testing/tracing values to create data for heatmaps
+              ]
+whattorun = runoptions[0] #Select which of the above to run
+
+# Filepaths
+data_path = 'UK_Covid_cases_january01.xlsx'
+resfolder = 'results'
+
+# Important dates
+start_day = '2020-01-21'
+end_day = '2021-03-31'
+data_end = '2021-01-02' # Final date for calibration
+
+
+########################################################################
+# Create the baseline simulation
+########################################################################
+
+def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None, future_t_eff=None, end_day='2021-01-30', verbose=0):
+
+    # Set the parameters
+    total_pop    = 67.86e6 # UK population size
+    pop_size     = 100e3 # Actual simulated population
+    pop_scale    = int(total_pop/pop_size)
+    pop_type     = 'hybrid'
+    pop_infected = 1500
+    beta         = beta
+    asymp_factor = 2
+    contacts     = {'h':3.0, 's':20, 'w':20, 'c':20}
+    if end_day is None: end_day = '2021-03-31'
+
+    pars = sc.objdict(
+        pop_size     = pop_size,
+        pop_infected = pop_infected,
+        pop_scale    = pop_scale,
+        pop_type     = pop_type,
+        start_day    = start_day,
+        end_day      = end_day,
+        beta         = beta,
+        asymp_factor = asymp_factor,
+        contacts     = contacts,
+        rescale      = True,
+        rand_seed    = seed,
+        verbose      = verbose,
+    )
+
+    sim = cv.Sim(pars=pars, datafile=data_path, location='uk')
+    sim['prognoses']['sus_ORs'][1] = 1.0 # ages 20-30
+    sim['prognoses']['sus_ORs'][1] = 1.0 # ages 10-20
+    #sim['rel_severe_prob'] = 0.8    
+    #sim['rel_crit_prob']  = 1.0 # Scale factor for proportion of severe cases that become critical
+    #sim['rel_death_prob']  = 2.5# Scale factor for proportion of critical cases that result in death
+
+
+    # ADD BETA INTERVENTIONS
+    
+    beta_past  = sc.odict({'2020-02-14': [1.00, 1.00, 0.90, 0.90, ],
+                           '2020-03-16': [1.00, 0.90, 0.80, 0.80, ],
+                           '2020-03-23': [1.29, 0.02, 0.20, 0.20, ],
+                           '2020-04-30': [1.29, 0.02, 0.20, 0.20, ],
+                           '2020-05-15': [1.29, 0.02, 0.20, 0.30, ],
+                           '2020-06-01': [1.00, 0.23, 0.30, 0.50, ],
+                           '2020-06-15': [1.00, 0.38, 0.30, 0.50, ],
+                           '2020-07-22': [1.29, 0.00, 0.30, 0.50, ],
+                           '2020-08-01': [1.29, 0.00, 0.30, 0.50, ],
+                           '2020-09-02': [1.00, 0.63, 0.50, 0.70, ],
+                           '2020-10-01': [1.00, 0.63, 0.50, 0.70, ],
+                           '2020-10-16': [1.00, 0.63, 0.50, 0.70, ],
+                           '2020-10-26': [1.00, 0.00, 0.50, 0.70, ],
+                           '2020-11-01': [1.00, 0.63, 0.20, 0.40, ],
+                           '2020-11-05': [1.00, 0.63, 0.20, 0.40, ],
+                           '2020-11-14': [1.00, 0.63, 0.20, 0.40, ],
+                           '2020-11-21': [1.00, 0.63, 0.20, 0.40, ],
+                           '2020-11-30': [1.00, 0.63, 0.20, 0.40, ],
+                           '2020-12-03': [1.25, 0.63, 0.40, 0.70, ],
+                           '2020-12-20': [1.25, 0.00, 0.40, 0.70, ],
+                           '2020-12-25': [1.50, 0.00, 0.30, 0.70, ],
+                           '2020-12-26': [1.50, 0.00, 0.30, 0.70, ],
+                           '2020-12-31': [1.50, 0.00, 0.30, 0.70, ]
+                          })
+
+    if not calibration:
+        if scenario == 'masks15':
+            sbv1, sbv2, wbv1, wbv2, cbv1, cbv2 = 0.765, 1.00, 0.595, 0.425, 0.765, 0.595
+        elif scenario == 'masks30':
+            sbv1, sbv2, wbv1, wbv2, cbv1, cbv2 = 0.63,  0.70, 0.49,  0.35,  0.63,  0.49
+        elif scenario == 'masks15_notschools':
+            sbv1, sbv2, wbv1, wbv2, cbv1, cbv2 = 0.90,  0.90, 0.595, 0.425, 0.765, 0.595
+        elif scenario == 'masks30_notschools':
+            sbv1, sbv2, wbv1, wbv2, cbv1, cbv2 = 0.90,  0.70, 0.49,  0.35,  0.63,  0.49
+
+       # beta_scens = sc.odict({'2021-01-04': [1.00, sbv1, wbv1, cbv1],
+       #                        '2021-01-11': [1.00, 0.00, wbv2, cbv2],
+       #                        '2021-01-18': [1.00, sbv1, wbv1, cbv1],
+       #                        '2021-02-08': [1.00, 0.00, wbv2, cbv2],
+       #                        '2021-02-15': [1.00, sbv1, wbv1, cbv1],
+       #                        '2021-02-21': [1.00, 0.00, wbv2, cbv2],
+       #                         '2021-03-01': [1.00, sbv1, wbv1, cbv1],
+       #                        '2021-03-20': [1.00, 0.00, wbv2, cbv2],
+       #                        '2021-04-01': [1.00, 0.00, wbv2, cbv2],
+       #                        '2021-04-17': [1.00, sbv2, wbv1, cbv1]
+       #                       })
+        beta_scens = sc.odict({'2021-01-04': [1.00, 0.31, 0.20, 0.30],
+                               '2021-01-11': [1.00, 0.41, 0.20, 0.30],
+                               '2021-01-18': [1.00, 0.63, 0.20, 0.30],
+                               '2021-02-08': [1.00, 0.63, 0.50, 0.70],
+                               '2021-02-15': [1.00, 0.00, 0.50, 0.70],
+                               '2021-02-21': [1.00, 0.00, 0.50, 0.70],
+                               '2021-03-01': [1.00, 0.63, 0.50, 0.70],
+                               '2021-03-20': [1.00, 0.63, 0.50, 0.70],
+                               '2021-04-01': [1.00, 0.63, 0.50, 0.70],
+                               '2021-04-17': [1.00, 0.00, 0.50, 0.70]
+                              })
+
+        beta_dict = sc.mergedicts(beta_past, beta_scens)
+    else:
+        beta_dict = beta_past
+
+    beta_days = list(beta_dict.keys())
+    h_beta = cv.change_beta(days=beta_days, changes=[c[0] for c in beta_dict.values()], layers='h')
+    s_beta = cv.change_beta(days=beta_days, changes=[c[1] for c in beta_dict.values()], layers='s')
+    w_beta = cv.change_beta(days=beta_days, changes=[c[2] for c in beta_dict.values()], layers='w')
+    c_beta = cv.change_beta(days=beta_days, changes=[c[3] for c in beta_dict.values()], layers='c')
+
+    interventions = [h_beta, w_beta, s_beta, c_beta]
+
+    # ADD TEST AND TRACE INTERVENTIONS
+    
+    tc_day = sim.day('2020-03-16') #intervention of some testing (tc) starts on 16th March and we run until 1st April when it increases
+    te_day = sim.day('2020-04-01') #intervention of some testing (te) starts on 1st April and we run until 1st May when it increases
+    tt_day = sim.day('2020-05-01') #intervention of increased testing (tt) starts on 1st May
+    tti_day = sim.day('2020-06-01') #some schools reopen 1st June and start of enhanced TTI
+    tti_day_july = sim.day('2020-07-01') #intervention of tracing and enhanced testing (tti) at different levels starts on 1st July
+    tti_day_august= sim.day('2020-08-01') #intervention of tracing and enhanced testing (tti) at different levels starts on 1st August
+    tti_day_sep = sim.day('2020-09-01')
+    tti_day_oct = sim.day('2020-10-01')
+    tti_day_nov = sim.day('2020-11-01')
+    tti_day_dec = sim.day('2020-12-01')
+
+    s_prob_march = 0.009
+    s_prob_april = 0.012
+    s_prob_may   = 0.02769
+    s_prob_june = 0.02769
+    s_prob_july = 0.02769
+    s_prob_august = 0.03769
+    s_prob_sept = 0.08769
+    s_prob_oct = 0.08769
+    s_prob_nov = 0.08769
+    t_delay       = 1.0
+
+    #isolation may-july
+    iso_vals = [{k:0.1 for k in 'hswc'}]
+    #isolation august
+    iso_vals1 = [{k:0.3 for k in 'hswc'}]
+    #isolation september
+    iso_vals2 = [{k:0.5 for k in 'hswc'}]
+    #isolation october
+    iso_vals3 = [{k:0.6 for k in 'hswc'}]
+    #isolation november
+    iso_vals4 = [{k:0.4 for k in 'hswc'}]
+     #isolation december
+    iso_vals5 = [{k:0.5 for k in 'hswc'}]
+
+    #tracing level at 42.35% in June; 47.22% in July, 44.4% in August etc
+    t_eff_june   = 0.42
+    t_eff_july   = 0.47
+    t_eff_august = 0.44
+    t_eff_sep    = 0.50
+    t_eff_oct    = 0.50
+    t_eff_nov    = 0.50
+    t_probs_june = {k:t_eff_june for k in 'hwsc'}
+    t_probs_july = {k:t_eff_july for k in 'hwsc'}
+    t_probs_august = {k:t_eff_august for k in 'hwsc'}
+    t_probs_sep = {k:t_eff_sep for k in 'hwsc'}
+    t_probs_oct = {k:t_eff_oct for k in 'hwsc'}
+    t_probs_nov = {k:t_eff_nov for k in 'hwsc'}
+    trace_d_1      = {'h':0, 's':1, 'w':1, 'c':2}
+
+    #testing and isolation intervention
+    interventions += [
+        cv.test_prob(symp_prob=s_prob_march, asymp_prob=0.0, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tc_day, end_day=te_day-1, test_delay=t_delay, sensitivity=0.97),
+        cv.test_prob(symp_prob=s_prob_april, asymp_prob=0.0, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=te_day, end_day=tt_day-1, test_delay=t_delay, sensitivity=0.97),
+        cv.test_prob(symp_prob=s_prob_may, asymp_prob=0.0075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tt_day, end_day=tti_day-1, test_delay=t_delay, sensitivity=0.97),
+        cv.test_prob(symp_prob=s_prob_june, asymp_prob=0.0075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tti_day, end_day=tti_day_july-1, test_delay=t_delay, sensitivity=0.97),
+        cv.test_prob(symp_prob=s_prob_july, asymp_prob=0.0075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tti_day_july, end_day=tti_day_august-1, test_delay=t_delay, sensitivity=0.97),
+        cv.test_prob(symp_prob=s_prob_august, asymp_prob=0.0075, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tti_day_august, end_day=tti_day_sep-1, test_delay=t_delay, sensitivity=0.97),
+        cv.test_prob(symp_prob=s_prob_sept, asymp_prob=0.02, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tti_day_sep, end_day=tti_day_oct-1, test_delay=t_delay, sensitivity=0.97),
+        cv.test_prob(symp_prob=s_prob_oct, asymp_prob=0.02, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tti_day_oct, end_day=tti_day_nov-1, test_delay=t_delay, sensitivity=0.97),
+        cv.test_prob(symp_prob=s_prob_nov, asymp_prob=0.02, symp_quar_prob=0.0, asymp_quar_prob=0.0, start_day=tti_day_nov, test_delay=t_delay, sensitivity=0.97),
+        cv.dynamic_pars({'iso_factor': {'days': te_day, 'vals': iso_vals}}),
+        cv.contact_tracing(trace_probs=t_probs_june, trace_time=trace_d_1, start_day=tti_day, end_day=tti_day_july-1),
+        cv.contact_tracing(trace_probs=t_probs_july, trace_time=trace_d_1, start_day=tti_day_july, end_day=tti_day_august-1),
+        cv.contact_tracing(trace_probs=t_probs_august, trace_time=trace_d_1, start_day=tti_day_august, end_day=tti_day_sep-1),
+        cv.contact_tracing(trace_probs=t_probs_sep, trace_time=trace_d_1, start_day=tti_day_sep, end_day=tti_day_oct-1),
+        cv.contact_tracing(trace_probs=t_probs_oct, trace_time=trace_d_1, start_day=tti_day_oct, end_day=tti_day_nov-1),
+        cv.contact_tracing(trace_probs=t_probs_nov, trace_time=trace_d_1, start_day=tti_day_nov),
+        cv.dynamic_pars({'iso_factor': {'days': tti_day, 'vals': iso_vals}}),
+        cv.dynamic_pars({'iso_factor': {'days': tti_day_august, 'vals': iso_vals1}}),
+        cv.dynamic_pars({'iso_factor': {'days': tti_day_sep, 'vals': iso_vals2}}),
+        cv.dynamic_pars({'iso_factor': {'days': tti_day_oct, 'vals': iso_vals3}}),
+        cv.dynamic_pars({'iso_factor': {'days': tti_day_nov, 'vals': iso_vals4}}),
+        cv.dynamic_pars({'iso_factor': {'days': tti_day_dec, 'vals': iso_vals5}}),
+        #cv.dynamic_pars({'rel_death_prob': {'days': tti_day_august, 'vals': 1.1}}),
+        cv.dynamic_pars({'rel_death_prob': {'days': tti_day_nov, 'vals': 0.65}}),
+        #cv.dynamic_pars({'rel_severe_prob': {'days': tti_day_august, 'vals': 0.4}}),
+        cv.dynamic_pars({'beta': {'days': tti_day_august, 'vals': 0.01092}}),
+        #cv.dynamic_pars({'beta': {'days': tti_day_nov, 'vals': 0.008}}),
+        #cv.dynamic_pars({'beta': {'days': tti_day_oct, 'vals': 0.0085}}),
+        #cv.dynamic_pars({'rel_death_prob': {'days': [tti_day_july, tti_day_sep], 'vals': [0.5, 0.5]}}),
+      ]
+
+    # Finally, update the parameters
+    sim.update_pars(interventions=interventions)
+    for intervention in sim['interventions']:
+        intervention.do_plot = False
+
+    sim.initialize()
+
+    return sim
+
+
+########################################################################
+# Run calibration and scenarios
+########################################################################
+if __name__ == '__main__':
+
+    betas = [i / 10000 for i in range(72, 77, 1)]
+
+    # Quick calibration
+    if whattorun=='quickfit':
+        s0 = make_sim(seed=1, beta=0.00797, end_day=data_end)
+        sims = []
+        for seed in range(6):
+            sim = s0.copy()
+            sim['rand_seed'] = seed
+            sim.set_seed()
+            sim.label = f"Sim {seed}"
+            sims.append(sim)
+        msim = cv.MultiSim(sims)
+        msim.run()
+        msim.reduce()
+    
+        if do_plot:
+            msim.plot(to_plot=to_plot, do_save=True, do_show=False, fig_path=f'uk.png',
+                      legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50, n_cols=2)
+
+        plot_customizations = dict(
+        interval   = 60, # Number of days between tick marks
+        dateformat = '%m/%Y', # Date format for ticks
+        fig_args   = {'figsize':(14, 6)}, # Size of the figure (x and y)
+        axis_args  = {'left':0.10, 'right': 0.95, 'top': 0.88, 'bottom': 0.12}, # Space on left side of plot
+        #font_family = 'Roboto Condensed',
+        #font_size = 26,
+        do_show=do_show,
+        color = 'k'
+        # scatter_args={'c': 'k'}
+        )
+
+        plot_customizations['color'] = mplt.colors.to_rgba('#333333')
+        msim.plot_result('r_eff', **plot_customizations)
+        #sim.plot_result('r_eff')
+        pl.axhline(1.0, linestyle='--', c=[0.8,0.4,0.4], alpha=0.8, lw=4) # Add a line for the R_eff = 1 cutoff
+        pl.title('')
+        pl.savefig('R.pdf')
+
+        plot_customizations['color'] = mplt.colors.to_rgba('black')
+        msim.plot_result('cum_deaths', **plot_customizations)
+        pl.title('')
+        pl.savefig('Cumulative Deaths.pdf')
+        
+        plot_customizations['color'] = mplt.colors.to_rgba('#c21945')
+        msim.plot_result('new_infections', **plot_customizations)
+        pl.title('')
+        pl.savefig('Infections.pdf')
+
+        plot_customizations['color'] = mplt.colors.to_rgba('#2c00b5')
+        msim.plot_result('cum_infections', **plot_customizations)
+        pl.title('')
+        pl.savefig('Diagnoses.pdf')
+
+
+
+    # Full parameter/seed search
+    elif whattorun=='fullfit':
+        fitsummary = []
+        for beta in betas:
+            sc.blank()
+            print('---------------\n')
+            print(f'Beta: {beta}... ')
+            print('---------------\n')
+            s0 = make_sim(seed=1, beta=beta, end_day=data_end)
+            sims = []
+            for seed in range(n_runs):
+                sim = s0.copy()
+                sim['rand_seed'] = seed
+                sim.set_seed()
+                sim.label = f"Sim {seed}"
+                sims.append(sim)
+            msim = cv.MultiSim(sims)
+            msim.run()
+            fitsummary.append([sim.compute_fit().mismatch for sim in msim.sims])
+
+        sc.saveobj(f'{resfolder}/fitsummary.obj',fitsummary)
+
+    # Run calibration with best-fitting seeds and parameters
+    elif whattorun=='finialisefit':
+        sims = []
+        fitsummary = sc.loadobj(f'{resfolder}/fitsummary.obj')
+        for bn, beta in enumerate(betas):
+            goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 163]
+            sc.blank()
+            print('---------------\n')
+            print(f'Beta: {beta}, goodseeds: {len(goodseeds)}')
+            print('---------------\n')
+            if len(goodseeds) > 0:
+                s0 = make_sim(seed=1, beta=beta, end_day=data_end)
+                for seed in goodseeds:
+                    sim = s0.copy()
+                    sim['rand_seed'] = seed
+                    sim.set_seed()
+                    sim.label = f"Sim {seed}"
+                    sims.append(sim)
+
+#        msim = cv.MultiSim(sims)
+#        msim.run()
+
+#        if save_sim:
+#            msim.save(f'{resfolder}/uk_sim.obj')
+#        if do_plot:
+#            msim.reduce()
+#            msim.plot(to_plot=to_plot, do_save=do_save, do_show=False, fig_path=f'uk.png',
+#                      legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50, n_cols=2)
+
+
+    # Run scenarios with best-fitting seeds and parameters
+    elif whattorun=='scens':
+
+        # Define scenario to run
+        scenarios = sc.odict({'masks15': 0.15,
+                              'masks30': 0.07,
+                              'masks15_notschools': 0.17,
+                              'masks30_notschools': 0.095})
+
+        for scenname, future_symp_test in scenarios.iteritems():
+
+            print('---------------\n')
+            print(f'Beginning scenario: {scenname}')
+            print('---------------\n')
+            sc.blank()
+            sims_cur, sims_opt = [], []
+            fitsummary = sc.loadobj(f'{resfolder}/fitsummary.obj')
+
+            for bn, beta in enumerate(betas):
+                goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 163]
+                if len(goodseeds) > 0:
+                    s_cur = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=None, end_day='2021-12-31')
+                    s_opt = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=future_symp_test, end_day='2021-12-31')
+                    for seed in goodseeds:
+                        sim_cur = s_cur.copy()
+                        sim_cur['rand_seed'] = seed
+                        sim_cur.set_seed()
+                        sim_cur.label = f"Sim {seed}"
+                        sims_cur.append(sim_cur)
+                        sim_opt = s_opt.copy()
+                        sim_opt['rand_seed'] = seed
+                        sim_opt.set_seed()
+                        sim_opt.label = f"Sim {seed}"
+                        sims_opt.append(sim_opt)
+
+            msim_cur = cv.MultiSim(sims_cur)
+            msim_cur.run()
+            msim_opt = cv.MultiSim(sims_opt)
+            msim_opt.run()
+
+            if save_sim:
+                msim_cur.save(f'{resfolder}/uk_sim_{scenname}_current.obj')
+                msim_opt.save(f'{resfolder}/uk_sim_{scenname}_optimal.obj')
+            if do_plot:
+                msim_cur.reduce()
+                msim_cur.plot(to_plot=to_plot, do_save=do_save, do_show=False, fig_path=f'uk_{scenname}_current.png',
+                          legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50, n_cols=2)
+                msim_cur.reduce()
+                msim_cur.plot(to_plot=to_plot, do_save=do_save, do_show=False, fig_path=f'uk_{scenname}_optimal.png',
+                          legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50, n_cols=2)
+
+            print(f'... completed scenario: {scenname}')
+
+
+    # Run scenarios with best-fitting seeds and parameters
+    elif whattorun=='tti_sweeps':
+
+        symp_test_vals = np.linspace(0, 1, 21)
+        trace_eff_vals = np.linspace(0, 1, 21)
+        scenarios = ['masks30_notschools','masks15','masks30','masks15_notschools']
+
+        # Define scenario to run
+        for scenname in scenarios:
+            sweep_summary = {'cum_inf':[],'peak_inf':[],'cum_death':[]}
+            for future_symp_test in symp_test_vals:
+                daily_test = np.round(1 - (1 - future_symp_test) ** (1 / 10), 3) if future_symp_test<1 else 0.4
+                cum_inf, peak_inf, cum_death = [], [], []
+                for future_t_eff in trace_eff_vals:
+
+                    sc.blank()
+                    print('---------------')
+                    print(f'Scenario: {scenname}, testing: {future_symp_test}, tracing: {future_t_eff}')
+                    print('--------------- ')
+                    sims = []
+                    fitsummary = sc.loadobj(f'{resfolder}/fitsummary.obj')
+
+                    for bn, beta in enumerate(betas):
+                        goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 125.5] # Take the best 10
+                        if len(goodseeds) > 0:
+                            s0 = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=daily_test, future_t_eff=future_t_eff, end_day='2021-12-31')
+                            for seed in goodseeds:
+                                sim = s0.copy()
+                                sim['rand_seed'] = seed
+                                sim.set_seed()
+                                sim.label = f"Sim {seed}"
+                                sims.append(sim)
+
+                    msim = cv.MultiSim(sims)
+                    msim.run(verbose=-1)
+                    msim.reduce()
+
+                    # Store results
+                    data_end_day = msim.sims[0].day('2020-01-30')
+
+                    cum_inf.append(msim.results['cum_infections'].values[-1])
+                    peak_inf.append(max(msim.results['new_infections'].values[data_end_day:]))
+                    cum_death.append(msim.results['cum_deaths'].values[-1])
+
+                sweep_summary['cum_inf'].append(cum_inf)
+                sweep_summary['peak_inf'].append(peak_inf)
+                sweep_summary['cum_death'].append(cum_death)
+
+            sc.saveobj(f'{resfolder}/uk_tti_sweeps_{scenname}.obj', sweep_summary)
