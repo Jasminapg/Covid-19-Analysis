@@ -27,8 +27,8 @@ to_plot = sc.objdict({
     'Cumulative diagnoses': ['cum_diagnoses'],
     'Cumulative infections': ['cum_infections'],
     'New infections': ['new_infections'],
-    'New diagnoses': ['new_diagnoses'],
-    'Cumulative hospitalisations': ['cum_severe'],
+#    'New diagnoses': ['new_diagnoses'],
+#    'Cumulative hospitalisations': ['cum_severe'],
     'Cumulative deaths': ['cum_deaths'],
 })
 
@@ -36,8 +36,9 @@ to_plot = sc.objdict({
 runoptions = ['quickfit', # Does a quick preliminary calibration. Quick to run, ~30s
               'fullfit',  # Searches over parameters and seeds (10,000 runs) and calculates the mismatch for each. Slow to run: ~1hr
               'finialisefit', # Filters the 10,000 runs from the previous step, selects the best-fitting ones, and runs these
+              'scens' # Runs the 3 scenarios
               ]
-whattorun = runoptions[1] #Select which of the above to run
+whattorun = runoptions[3] #Select which of the above to run
 
 # Filepaths
 data_path = '../UK_Covid_cases_january03.xlsx'
@@ -46,14 +47,14 @@ resfolder = 'results'
 # Important dates
 start_day = '2020-01-21'
 end_day = '2021-03-31'
-data_end = '2020-12-31' # Final date for calibration
+data_end = '2021-01-03' # Final date for calibration
 
 
 ########################################################################
 # Create the baseline simulation
 ########################################################################
 
-def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None, future_t_eff=None, end_day=None, verbose=0):
+def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None, end_day=None, verbose=0):
 
     # Set the parameters
     total_pop    = 67.86e6 # UK population size
@@ -89,7 +90,7 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
     sim['prognoses']['sus_ORs'][1] = 1.0 # ages 20-30
 
     # ADD BETA INTERVENTIONS
-    sbv = 0.63
+    sbv = 0.72
     beta_past  = sc.odict({'2020-02-14': [1.00, 1.00, 0.90, 0.90, ],
                            '2020-03-16': [1.00, 0.90, 0.80, 0.80, ],
                            '2020-03-23': [1.29, 0.02, 0.20, 0.20, ],
@@ -255,13 +256,13 @@ if __name__ == '__main__':
         sims = []
         fitsummary = sc.loadobj(f'{resfolder}/fitsummary.obj')
         for bn, beta in enumerate(betas):
-            goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 200]
+            goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 275] #351.5=100, 275=10
             sc.blank()
             print('---------------\n')
             print(f'Beta: {beta}, goodseeds: {len(goodseeds)}')
             print('---------------\n')
             if len(goodseeds) > 0:
-                s0 = make_sim(seed=1, beta=beta, end_day=data_end)
+                s0 = make_sim(seed=1, beta=beta, end_day=data_end, verbose=0.1)
                 for seed in goodseeds:
                     sim = s0.copy()
                     sim['rand_seed'] = seed
@@ -284,10 +285,14 @@ if __name__ == '__main__':
     elif whattorun=='scens':
 
         # Define scenario to run
-        scenarios = sc.odict({'masks15': 0.15,
-                              'masks30': 0.07,
-                              'masks15_notschools': 0.17,
-                              'masks30_notschools': 0.095})
+        if scenario == 'FNL':
+            beta_s_jan4, beta_s_jan11, beta_s_jan18 = 0.02, 0.02, 0.02
+        elif scenario == 'primaryPNL':
+            beta_s_jan4, beta_s_jan11, beta_s_jan18 = sbv/2, sbv, sbv
+        elif scenario == 'staggeredPNL':
+            beta_s_jan4, beta_s_jan11, beta_s_jan18 = sbv/2, 0.41, sbv
+
+        scenarios = ['FNL', 'primaryPNL', 'staggeredPNL']
 
         for scenname, future_symp_test in scenarios.iteritems():
 
@@ -299,83 +304,26 @@ if __name__ == '__main__':
             fitsummary = sc.loadobj(f'{resfolder}/fitsummary.obj')
 
             for bn, beta in enumerate(betas):
-                goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 163]
+                goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 351.5]
                 if len(goodseeds) > 0:
-                    s_cur = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=None, end_day='2021-12-31')
-                    s_opt = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=future_symp_test, end_day='2021-12-31')
+                    s_cur = make_sim(1, beta, calibration=False, scenario=scenname, end_day='2021-02-28')
                     for seed in goodseeds:
                         sim_cur = s_cur.copy()
                         sim_cur['rand_seed'] = seed
                         sim_cur.set_seed()
                         sim_cur.label = f"Sim {seed}"
                         sims_cur.append(sim_cur)
-                        sim_opt = s_opt.copy()
-                        sim_opt['rand_seed'] = seed
-                        sim_opt.set_seed()
-                        sim_opt.label = f"Sim {seed}"
-                        sims_opt.append(sim_opt)
 
             msim_cur = cv.MultiSim(sims_cur)
             msim_cur.run()
-            msim_opt = cv.MultiSim(sims_opt)
-            msim_opt.run()
 
             if save_sim:
-                msim_cur.save(f'{resfolder}/uk_sim_{scenname}_current.obj')
-                msim_opt.save(f'{resfolder}/uk_sim_{scenname}_optimal.obj')
+                msim_cur.save(f'{resfolder}/uk_sim_{scenname}.obj')
             if do_plot:
                 msim_cur.reduce()
                 msim_cur.plot(to_plot=to_plot, do_save=do_save, do_show=False, fig_path=f'uk_{scenname}_current.png',
-                          legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50, n_cols=2)
-                msim_cur.reduce()
-                msim_cur.plot(to_plot=to_plot, do_save=do_save, do_show=False, fig_path=f'uk_{scenname}_optimal.png',
                           legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50, n_cols=2)
 
             print(f'... completed scenario: {scenname}')
 
 
-    # Run scenarios with best-fitting seeds and parameters
-    elif whattorun=='tti_sweeps':
-
-        symp_test_vals = np.linspace(0, 1, 21)
-        trace_eff_vals = np.linspace(0, 1, 21)
-        scenarios = ['masks30','masks30_notschools','masks15_notschools','masks15'] 
-
-        # Define scenario to run
-        for scenname in scenarios:
-            sweep_summary = {'cum_inf':[],'peak_inf':[],'cum_death':[]}
-            for future_symp_test in symp_test_vals:
-                daily_test = np.round(1 - (1 - future_symp_test) ** (1 / 10), 3) if future_symp_test<1 else 0.4
-                cum_inf, peak_inf, cum_death = [], [], []
-                for future_t_eff in trace_eff_vals:
-
-                    sc.blank()
-                    print('---------------')
-                    print(f'Scenario: {scenname}, testing: {future_symp_test}, tracing: {future_t_eff}')
-                    print('--------------- ')
-                    sims = []
-                    fitsummary = sc.loadobj(f'{resfolder}/fitsummary.obj')
-
-                    for bn, beta in enumerate(betas):
-                        goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 125.5] # Take the best 10
-                        if len(goodseeds) > 0:
-                            s0 = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=daily_test, future_t_eff=future_t_eff, end_day='2021-12-31')
-                            for seed in goodseeds:
-                                sim = s0.copy()
-                                sim['rand_seed'] = seed
-                                sim.set_seed()
-                                sim.label = f"Sim {seed}"
-                                sims.append(sim)
-
-                    msim = cv.MultiSim(sims)
-                    msim.run(verbose=-1)
-                    msim.reduce()
-                    cum_inf.append(msim.results['cum_infections'].values[-1])
-                    peak_inf.append(max(msim.results['new_infections'].values))
-                    cum_death.append(msim.results['cum_deaths'].values[-1])
-
-                sweep_summary['cum_inf'].append(cum_inf)
-                sweep_summary['peak_inf'].append(peak_inf)
-                sweep_summary['cum_death'].append(cum_death)
-
-            sc.saveobj(f'{resfolder}/uk_tti_sweeps_{scenname}.obj', sweep_summary)
