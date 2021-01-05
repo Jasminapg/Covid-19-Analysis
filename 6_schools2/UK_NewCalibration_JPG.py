@@ -38,7 +38,7 @@ runoptions = ['quickfit', # Does a quick preliminary calibration. Quick to run, 
               'finialisefit', # Filters the 10,000 runs from the previous step, selects the best-fitting ones, and runs these
               'scens' # Runs the 3 scenarios
               ]
-whattorun = runoptions[2] #Select which of the above to run
+whattorun = runoptions[3] #Select which of the above to run
 
 # Filepaths
 data_path = '../UK_Covid_cases_january03.xlsx'
@@ -306,7 +306,7 @@ if __name__ == '__main__':
             fitsummary = sc.loadobj(f'{resfolder}/fitsummary.obj')
 
             for bn, beta in enumerate(betas):
-                goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 351.5]
+                goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 231.5]
                 if len(goodseeds) > 0:
                     s_cur = make_sim(1, beta, calibration=False, scenario=scenname, end_day='2021-02-28')
                     for seed in goodseeds:
