@@ -22,7 +22,7 @@ T = sc.tic()
 def format_ax(ax, sim, key=None):
     @ticker.FuncFormatter
     def date_formatter(x, pos):
-        return (sim['start_day'] + dt.timedelta(days=int(x))).strftime('%b-%y')
+        return (sim['start_day'] + dt.timedelta(days=int(x))).strftime('%b\n%y')
     ax.xaxis.set_major_formatter(date_formatter)
     if key != 'r_eff':
         sc.commaticks()
@@ -68,7 +68,9 @@ def plotter(key, sims, ax, label='', ylabel='', low_q=0.05, high_q=0.95, subsamp
 
     sc.setylim()
 
-    datemarks = pl.array([sim.day('2020-03-01'),sim.day('2020-06-01'),sim.day('2020-09-01'),sim.day('2020-12-01')])
+    datemarks = pl.array([sim.day('2020-03-01'),sim.day('2020-05-01'),
+                          sim.day('2020-07-01'),sim.day('2020-09-01'),
+                          sim.day('2020-11-01'),sim.day('2021-01-01'),sim.day('2021-03-01')])
     ax.set_xticks(datemarks)
     pl.ylabel(ylabel)
 
@@ -86,9 +88,9 @@ pl.rcParams['font.family'] = font_family
 xgapl = 0.1
 xgapm = 0.02
 xgapr = 0.03
-ygapb = 0.05
+ygapb = 0.075
 ygapm = 0.02
-ygapt = 0.1
+ygapt = 0.05
 nrows = 3
 ncols = 3
 dx = (1 - (ncols - 1) * xgapm - xgapl - xgapr) / ncols
@@ -153,12 +155,12 @@ for pn in range(nplots):
             ax[pn].set_ylabel('R')
     elif pn in range(ncols,ncols*2):
         plotter('cum_deaths', sims[pn % ncols], ax[pn])
-        ax[pn].set_ylim(0, 100_000)
+        ax[pn].set_ylim(0, 150_000)
         if (pn%ncols) == 0:
             ax[pn].set_ylabel('Total deaths')
     else:
         plotter('new_infections', sims[pn % ncols], ax[pn])
-        ax[pn].set_ylim(0, 150_000)
+        ax[pn].set_ylim(0, 200_000)
         if (pn%ncols) == 0:
             ax[pn].set_ylabel('New infections')
 
@@ -176,7 +178,7 @@ pl.figure(figsize=(24, 12))
 #pl.rcParams['font.size'] = font_size
 
 # Subplot sizes
-xgapl = 0.05
+xgapl = 0.06
 xgapm = 0.1
 xgapr = 0.01
 ygapb = 0.11
