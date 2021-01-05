@@ -101,16 +101,30 @@ pl.figure(figsize=(24, 16))
 # Import files
 filepaths = [f'{resfolder}/uk_sim_{scen}.obj' for scen in scenarios]
 sims = sc.odict()
+msims = sc.odict()
+
 for scen in scenarios:
     filepath = f'{resfolder}/uk_sim_{scen}.obj'
-    simsfile = sc.loadobj(filepath)
-    sims[scen] = simsfile.sims
+    msims[scen] = sc.loadobj(filepath)
+    sims[scen] = msims[scen].sims
+    msims[scen].reduce()
+
 sim = sims[0][0] # Extract a sim to refer to
 
+# Extract weekly infection data
+w0, w1, w2, w3, w4, w5, w6, w7 = cv.date('2021-01-10'), cv.date('2021-01-17'), cv.date('2021-01-24'), cv.date('2021-01-31'), \
+                                 cv.date('2021-02-07'), cv.date('2021-02-14'), cv.date('2021-02-21'), cv.date('2021-02-28')
+wd = [sim.day(w0), sim.day(w1), sim.day(w2), sim.day(w3), sim.day(w4), sim.day(w5), sim.day(w6), sim.day(w7)]
+inf_med = []
+inf_low = []
+inf_high = []
+for scen in scenarios:
+    inf_med.append(msims[scen].results['new_infections'].values[wd])
+    inf_low.append(msims[scen].results['new_infections'].low[wd])
+    inf_high.append(msims[scen].results['new_infections'].high[wd])
+
 epsx = 0.003
-epsy = 0.008
 llpad = 0.01
-rlpad = 0.005
 
 lockdown1 = [sim.day('2020-03-23'),sim.day('2020-05-31')]
 lockdown2 = [sim.day('2020-11-05'),sim.day('2020-12-03')]
@@ -152,5 +166,68 @@ for pn in range(nplots):
         ax[pn].set_xticklabels([])
 
 cv.savefig(f'{figsfolder}/fig_UK_school_scens.png', dpi=100)
+
+
+################################################################################
+# ## Fig 3
+################################################################################
+pl.figure(figsize=(24, 12))
+#font_size = 24
+#pl.rcParams['font.size'] = font_size
+
+# Subplot sizes
+xgapl = 0.05
+xgapm = 0.1
+xgapr = 0.01
+ygapb = 0.11
+ygapm = 0.1
+ygapt = 0.02
+nrows = 1
+ncols = 2
+dx1 = (1-(ncols-1)*xgapm-xgapl-xgapr)*0.6
+dx2 = (1-(ncols-1)*xgapm-xgapl-xgapr)*0.4
+dy = (1-(nrows-1)*ygapm-ygapb-ygapt)/nrows
+nplots = nrows*ncols
+
+colors = pl.cm.GnBu(np.array([0.3,0.65,1.]))
+
+# Fig 3A. box plot chart
+box_ax = pl.axes([xgapl, ygapb, dx1, dy])
+x = np.arange(8)
+
+for sn in range(3):
+    box_ax.errorbar(x+0.1*sn-0.3, inf_med[sn]/1e3, yerr=[inf_low[sn]/1e3, inf_high[sn]/1e3], fmt='o', color=colors[sn], label=labels[sn], ecolor=colors[sn], ms=20, elinewidth=3, capsize=0)
+
+box_ax.set_xticks(x-0.15)
+#box_ax.set_xticklabels(labels)
+
+@ticker.FuncFormatter
+def date_formatter(x, pos):
+    return (cv.date('2021-01-12') + dt.timedelta(days=x*7)).strftime('%d-%b')
+
+box_ax.xaxis.set_major_formatter(date_formatter)
+pl.ylabel('Estimated daily infections (000s)')
+sc.boxoff(ax=box_ax)
+sc.commaticks()
+box_ax.legend(frameon=False)
+
+
+# B. Cumulative total infections
+width = 0.8  # the width of the bars
+x = [0,1,2]
+data = np.array([msims[sn].results['cum_infections'].values[-1]-msims[sn].results['cum_infections'].values[sim.day('2021-01-04')] for sn in scenarios])
+bar_ax = pl.axes([xgapl+xgapm+dx1, ygapb, dx2, dy])
+for sn,scen in enumerate(scenarios):
+    bar_ax.bar(x[sn], data[sn]/1e3, width, color=colors[sn], alpha=1.0)
+
+bar_ax.set_xticklabels(['', 'Staggered\nPNL', 'Primary-only\nPNL', 'FNL'])
+sc.boxoff()
+sc.commaticks()
+bar_ax.set_ylabel('Total estimated infections\nJan 4 - Feb 28 (000s)')
+
+cv.savefig(f'{figsfolder}/fig_bars.png', dpi=100)
+
+
+
 
 sc.toc(T)

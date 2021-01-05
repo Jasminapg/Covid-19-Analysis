@@ -27,8 +27,8 @@ to_plot = sc.objdict({
     'Cumulative diagnoses': ['cum_diagnoses'],
     'Cumulative infections': ['cum_infections'],
     'New infections': ['new_infections'],
-#    'New diagnoses': ['new_diagnoses'],
-#    'Cumulative hospitalisations': ['cum_severe'],
+    'New diagnoses': ['new_diagnoses'],
+    'Cumulative hospitalisations': ['cum_severe'],
     'Cumulative deaths': ['cum_deaths'],
 })
 
@@ -38,7 +38,7 @@ runoptions = ['quickfit', # Does a quick preliminary calibration. Quick to run, 
               'finialisefit', # Filters the 10,000 runs from the previous step, selects the best-fitting ones, and runs these
               'scens' # Runs the 3 scenarios
               ]
-whattorun = runoptions[3] #Select which of the above to run
+whattorun = runoptions[0] #Select which of the above to run
 
 # Filepaths
 data_path = '../UK_Covid_cases_january03.xlsx'
@@ -80,8 +80,8 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
         rescale      = True,
         rand_seed    = seed,
         verbose      = verbose,
-#        rel_severe_prob = 0.5,
-#        rel_crit_prob = 2,
+        rel_severe_prob = 0.5,
+        rel_crit_prob = 2,
 #        rel_death_prob=1.5,
     )
 
@@ -90,28 +90,28 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
     sim['prognoses']['sus_ORs'][1] = 1.0 # ages 20-30
 
     # ADD BETA INTERVENTIONS
-    sbv = 0.72
+    sbv = 0.77
     beta_past  = sc.odict({'2020-02-14': [1.00, 1.00, 0.90, 0.90, ],
                            '2020-03-16': [1.00, 0.90, 0.80, 0.80, ],
                            '2020-03-23': [1.29, 0.02, 0.20, 0.20, ],
                            '2020-06-01': [1.00, 0.23, 0.40, 0.40, ],
                            '2020-06-15': [1.00, 0.38, 0.50, 0.50, ],
                            '2020-07-22': [1.29, 0.00, 0.30, 0.50, ],
-                           '2020-09-02': [1.00, sbv,  0.50, 0.70, ],
-                           '2020-10-26': [1.00, 0.00, 0.50, 0.70, ],
-                           '2020-11-01': [1.00, sbv,  0.20, 0.40, ],
-                           '2020-12-03': [1.25, sbv,  0.40, 0.70, ],
-                           '2020-12-20': [1.25, 0.00, 0.40, 0.70, ],
-                           '2020-12-25': [1.50, 0.00, 0.30, 0.70, ],
+                           '2020-09-02': [1.00, sbv,  0.60, 0.90, ],
+                           '2020-10-26': [1.25, 0.00, 0.60, 0.90, ],
+                           '2020-11-01': [1.25, sbv,  0.20, 0.40, ],
+                           '2020-12-03': [1.25, sbv,  0.60, 0.90, ],
+                           '2020-12-20': [1.25, 0.00, 0.40, 0.90, ],
+                           '2020-12-25': [1.50, 0.00, 0.30, 0.90, ],
                            })
 
     if not calibration:
         if scenario == 'FNL':
             beta_s_jan4, beta_s_jan11, beta_s_jan18 = 0.02, 0.02, 0.02
         elif scenario == 'primaryPNL':
-            beta_s_jan4, beta_s_jan11, beta_s_jan18 = sbv/2, sbv, sbv
+            beta_s_jan4, beta_s_jan11, beta_s_jan18 = sbv/2, sbv/2, sbv
         elif scenario == 'staggeredPNL':
-            beta_s_jan4, beta_s_jan11, beta_s_jan18 = sbv/2, 0.41, sbv
+            beta_s_jan4, beta_s_jan11, beta_s_jan18 = sbv/2, 0.45, sbv
 
         beta_scens = sc.odict({'2021-01-04': [1.00, beta_s_jan4,  0.20, 0.30],
                                '2021-01-11': [1.00, beta_s_jan11, 0.20, 0.30],
@@ -135,7 +135,16 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
     w_beta = cv.change_beta(days=beta_days, changes=[c[2] for c in beta_dict.values()], layers='w')
     c_beta = cv.change_beta(days=beta_days, changes=[c[3] for c in beta_dict.values()], layers='c')
 
-    interventions = [h_beta, w_beta, s_beta, c_beta]
+    # Add a new change in beta to represent the takeover of the novel variant VOC 202012/01
+    # Assume that the new variant is 60% more transmisible (https://cmmid.github.io/topics/covid19/uk-novel-variant.html,
+    # Assume that between Nov 1 and Jan 30, the new variant grows from 0-100% of cases
+    voc_days   = np.linspace(sim.day('2020-09-01'), sim.day('2021-01-30'), 31)
+    voc_prop   = 1/(1+np.exp(-.1*(voc_days-sim.day('2020-11-16')))) # Use a logistic growth function to approximate fig 2A of https://cmmid.github.io/topics/covid19/uk-novel-variant.html
+    voc_change = voc_prop*1.6 + (1-voc_prop)*1.
+    voc_beta = cv.change_beta(days=voc_days,
+                              changes=voc_change)
+
+    interventions = [h_beta, w_beta, s_beta, c_beta, voc_beta]
 
     # ADD TEST AND TRACE INTERVENTIONS
     tc_day = sim.day('2020-03-16') #intervention of some testing (tc) starts on 16th March and we run until 1st April when it increases
@@ -156,10 +165,10 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
     s_prob_july = 0.01
     s_prob_august = 0.01
     tn = 0.09
-    s_prob_sep = tn
-    s_prob_oct = tn
-    s_prob_nov = tn
-    s_prob_dec = tn
+    s_prob_sep = 0.06
+    s_prob_oct = 0.07
+    s_prob_nov = 0.09
+    s_prob_dec = 0.1
     if future_symp_test is None: future_symp_test = s_prob_dec
     t_delay       = 1.0
 
@@ -189,8 +198,7 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
         cv.dynamic_pars({'iso_factor': {'days': tti_day_august, 'vals': iso_vals1}})]
 
     # Change death and critical probabilities
-    interventions += [cv.dynamic_pars({'rel_death_prob':{'days':sim.day('2020-07-01'), 'vals':0.6}}),
-                      cv.dynamic_pars({'beta': {'days': tti_day_august, 'vals': beta*1.15}})]
+#    interventions += [cv.dynamic_pars({'rel_death_prob':{'days':sim.day('2020-07-01'), 'vals':0.6}})]
 
 
     # Finally, update the parameters
@@ -208,11 +216,11 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
 ########################################################################
 if __name__ == '__main__':
 
-    betas = [i / 10000 for i in range(72, 77, 1)]
+    #betas = [i / 10000 for i in range(72, 77, 1)]
 
     # Quick calibration
     if whattorun=='quickfit':
-        s0 = make_sim(seed=1, beta=0.0075, end_day=data_end, verbose=0.1)
+        s0 = make_sim(seed=1, beta=0.0077, end_day=data_end, verbose=0.1)
         sims = []
         for seed in range(6):
             sim = s0.copy()
