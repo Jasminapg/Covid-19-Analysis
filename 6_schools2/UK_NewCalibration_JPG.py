@@ -38,7 +38,7 @@ runoptions = ['quickfit', # Does a quick preliminary calibration. Quick to run, 
               'finialisefit', # Filters the 10,000 runs from the previous step, selects the best-fitting ones, and runs these
               'scens' # Runs the 3 scenarios
               ]
-whattorun = runoptions[3] #Select which of the above to run
+whattorun = runoptions[2] #Select which of the above to run
 
 # Filepaths
 data_path = '../UK_Covid_cases_january03.xlsx'
@@ -284,6 +284,7 @@ if __name__ == '__main__':
         msim.run()
 
         if save_sim:
+            msim.reduce()
             msim.save(f'{resfolder}/uk_sim.obj')
         if do_plot:
             msim.reduce()
