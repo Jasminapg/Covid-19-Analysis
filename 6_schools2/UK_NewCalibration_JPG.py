@@ -22,7 +22,7 @@ save_sim = 1
 do_show = 0
 verbose = 1
 seed    = 1
-n_runs = 200
+n_runs = 50
 to_plot = sc.objdict({
     'Cumulative diagnoses': ['cum_diagnoses'],
     'Cumulative infections': ['cum_infections'],
