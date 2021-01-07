@@ -38,7 +38,7 @@ runoptions = ['quickfit', # Does a quick preliminary calibration. Quick to run, 
               'finialisefit', # Filters the 10,000 runs from the previous step, selects the best-fitting ones, and runs these
               'scens' # Runs the 3 scenarios
               ]
-whattorun = runoptions[2] #Select which of the above to run
+whattorun = runoptions[1] #Select which of the above to run
 
 # Filepaths
 data_path = '../UK_Covid_cases_january03.xlsx'
@@ -54,7 +54,7 @@ data_end = '2021-01-03' # Final date for calibration
 # Create the baseline simulation
 ########################################################################
 
-def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None, end_day=None, verbose=0):
+def make_sim(seed, beta, calibration=True, scenario=None, delta_beta=0.6, future_symp_test=None, end_day=None, verbose=0):
 
     # Set the parameters
     total_pop    = 67.86e6 # UK population size
@@ -139,7 +139,7 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
     # Assume that between Nov 1 and Jan 30, the new variant grows from 0-100% of cases
     voc_days   = np.linspace(sim.day('2020-08-01'), sim.day('2021-01-30'), 31)
     voc_prop   = 0.8/(1+np.exp(-0.08*(voc_days-sim.day('2020-09-30')))) # Use a logistic growth function to approximate fig 2A of https://cmmid.github.io/topics/covid19/uk-novel-variant.html
-    voc_change = voc_prop*1.60 + (1-voc_prop)*1.
+    voc_change = voc_prop*(1+delta_beta) + (1-voc_prop)*1.
     voc_beta = cv.change_beta(days=voc_days,
                               changes=voc_change)
 
@@ -220,7 +220,8 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
 ########################################################################
 if __name__ == '__main__':
 
-    betas = [i / 10000 for i in range(75, 80, 1)]
+    betas = [i / 10000 for i in range(73, 83, 1)]
+    delta_betas = [i / 100 for i in range(50, 71, 5)]
 
     # Quick calibration
     if whattorun=='quickfit':
@@ -243,21 +244,22 @@ if __name__ == '__main__':
     elif whattorun=='fullfit':
         fitsummary = []
         for beta in betas:
-            sc.blank()
-            print('---------------\n')
-            print(f'Beta: {beta}... ')
-            print('---------------\n')
-            s0 = make_sim(seed=1, beta=beta, end_day=data_end)
-            sims = []
-            for seed in range(n_runs):
-                sim = s0.copy()
-                sim['rand_seed'] = seed
-                sim.set_seed()
-                sim.label = f"Sim {seed}"
-                sims.append(sim)
-            msim = cv.MultiSim(sims)
-            msim.run()
-            fitsummary.append([sim.compute_fit().mismatch for sim in msim.sims])
+            for delta_beta in delta_betas:
+                sc.blank()
+                print('---------------\n')
+                print(f'Beta: {beta}, delta_beta: {delta_beta}... ')
+                print('---------------\n')
+                s0 = make_sim(seed=1, beta=beta, delta_beta=delta_beta, end_day=data_end)
+                sims = []
+                for seed in range(n_runs):
+                    sim = s0.copy()
+                    sim['rand_seed'] = seed
+                    sim.set_seed()
+                    sim.label = f"Sim {seed}"
+                    sims.append(sim)
+                msim = cv.MultiSim(sims)
+                msim.run()
+                fitsummary.append([sim.compute_fit().mismatch for sim in msim.sims])
 
         sc.saveobj(f'{resfolder}/fitsummary.obj',fitsummary)
 
