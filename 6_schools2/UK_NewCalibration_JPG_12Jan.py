@@ -34,14 +34,12 @@ to_plot = sc.objdict({
 
 # Define what to run
 runoptions = ['quickfit', # Does a quick preliminary calibration. Quick to run, ~30s
-              'fullfit',  # Searches over parameters and seeds (10,000 runs) and calculates the mismatch for each. Slow to run: ~1hr
-              'finialisefit', # Filters the 10,000 runs from the previous step, selects the best-fitting ones, and runs these
               'scens' # Runs the 3 scenarios
               ]
-whattorun = runoptions[0] #Select which of the above to run
+whattorun = runoptions[1] #Select which of the above to run
 
 # Filepaths
-data_path = 'UK_Covid_cases_january03.xlsx'
+data_path = '../UK_Covid_cases_january03.xlsx'
 resfolder = 'results'
 
 # Important dates
@@ -124,7 +122,7 @@ def make_sim(seed, beta, calibration=True, scenario=None, delta_beta=1.6, future
         beta_scens = sc.odict({'2021-01-04': [1.25, beta_s_jan4, 0.30, 0.40],
                                '2021-01-11': [1.25, beta_s_jan11, 0.30, 0.40],
                                '2021-01-18': [1.25, beta_s_jan18, 0.30, 0.40],
-                               '2021-02-08': [1.25, svb, 0.50, 0.70], 
+                               '2021-02-08': [1.25, sbv, 0.50, 0.70],
                                '2021-02-15': [1.25, 0.00, 0.50, 0.70],
                                '2021-02-22': [1.25, 0.00, 0.50, 0.70],
                                '2021-03-01': [1.00, sbv, 0.50, 0.70],
@@ -266,59 +264,7 @@ if __name__ == '__main__':
                       legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=60, n_cols=2)
 
 
-    # Full parameter/seed search
-    elif whattorun=='fullfit':
-        fitsummary = []
-        for beta in betas:
-            sc.blank()
-            print('---------------\n')
-            print(f'Beta: {beta}... ')
-            print('---------------\n')
-            s0 = make_sim(seed=1, beta=beta, end_day=data_end)
-            sims = []
-            for seed in range(n_runs):
-                sim = s0.copy()
-                sim['rand_seed'] = seed
-                sim.set_seed()
-                sim.label = f"Sim {seed}"
-                sims.append(sim)
-            msim = cv.MultiSim(sims)
-            msim.run()
-            fitsummary.append([sim.compute_fit().mismatch for sim in msim.sims])
-
-        sc.saveobj(f'{resfolder}/fitsummary.obj',fitsummary)
-
-    # Run calibration with best-fitting seeds and parameters
-    elif whattorun=='finialisefit':
-        sims = []
-        fitsummary = sc.loadobj(f'{resfolder}/fitsummary.obj')
-        for bn, beta in enumerate(betas):
-            goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 275] #351.5=100, 275=10
-            sc.blank()
-            print('---------------\n')
-            print(f'Beta: {beta}, goodseeds: {len(goodseeds)}')
-            print('---------------\n')
-            if len(goodseeds) > 0:
-                s0 = make_sim(seed=1, beta=beta, end_day=data_end, verbose=0.1)
-                for seed in goodseeds:
-                    sim = s0.copy()
-                    sim['rand_seed'] = seed
-                    sim.set_seed()
-                    sim.label = f"Sim {seed}"
-                    sims.append(sim)
-
-        msim = cv.MultiSim(sims)
-        msim.run()
-
-        if save_sim:
-            msim.save(f'{resfolder}/uk_sim.obj')
-        if do_plot:
-            msim.reduce()
-            msim.plot(to_plot=to_plot, do_save=do_save, do_show=False, fig_path=f'uk.png',
-                      legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50, n_cols=2)
-
-
-    # Run scenarios with best-fitting seeds and parameters
+    # Run scenarios
     elif whattorun=='scens':
 
         scenarios = ['FNL', 'primaryPNL', 'staggeredPNL']
@@ -329,28 +275,23 @@ if __name__ == '__main__':
             print(f'Beginning scenario: {scenname}')
             print('---------------\n')
             sc.blank()
-            sims_cur = []
-            fitsummary = sc.loadobj(f'{resfolder}/fitsummary.obj')
+            s0 = make_sim(seed=1, beta=0.0078, end_day='2021-02-28', calibration=False, scenario=scenname, verbose=0.1)
+            sims = []
 
-            for bn, beta in enumerate(betas):
-                goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 351.5]
-                if len(goodseeds) > 0:
-                    s_cur = make_sim(1, beta, calibration=False, scenario=scenname, end_day='2021-02-28')
-                    for seed in goodseeds:
-                        sim_cur = s_cur.copy()
-                        sim_cur['rand_seed'] = seed
-                        sim_cur.set_seed()
-                        sim_cur.label = f"Sim {seed}"
-                        sims_cur.append(sim_cur)
-
-            msim_cur = cv.MultiSim(sims_cur)
-            msim_cur.run()
+            for seed in range(20):
+                sim = s0.copy()
+                sim['rand_seed'] = seed
+                sim.set_seed()
+                sim.label = f"Sim {seed}"
+                sims.append(sim)
+            msim = cv.MultiSim(sims)
+            msim.run()
 
             if save_sim:
-                msim_cur.save(f'{resfolder}/uk_sim_{scenname}.obj')
+                    msim.save(f'{resfolder}/uk_sim_{scenname}.obj')
             if do_plot:
-                msim_cur.reduce()
-                msim_cur.plot(to_plot=to_plot, do_save=do_save, do_show=False, fig_path=f'uk_{scenname}_current.png',
+                msim.reduce(quantiles=[0.10, 0.90])
+                msim.plot(to_plot=to_plot, do_save=do_save, do_show=False, fig_path=f'uk_{scenname}_current.png',
                           legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50, n_cols=2)
 
             print(f'... completed scenario: {scenname}')

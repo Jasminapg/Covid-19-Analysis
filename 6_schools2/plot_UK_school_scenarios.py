@@ -160,7 +160,7 @@ for pn in range(nplots):
             ax[pn].set_ylabel('Total deaths')
     else:
         plotter('new_infections', sims[pn % ncols], ax[pn])
-        ax[pn].set_ylim(0, 200_000)
+        ax[pn].set_ylim(0, 250_000)
         if (pn%ncols) == 0:
             ax[pn].set_ylabel('New infections')
 

@@ -38,7 +38,7 @@ runoptions = ['quickfit', # Does a quick preliminary calibration. Quick to run, 
               'finialisefit', # Filters the 10,000 runs from the previous step, selects the best-fitting ones, and runs these
               'scens' # Runs the 3 scenarios
               ]
-whattorun = runoptions[1] #Select which of the above to run
+whattorun = runoptions[0] #Select which of the above to run
 
 # Filepaths
 data_path = '../UK_Covid_cases_january03.xlsx'
@@ -268,19 +268,20 @@ if __name__ == '__main__':
         sims = []
         fitsummary = sc.loadobj(f'{resfolder}/fitsummary.obj')
         for bn, beta in enumerate(betas):
-            goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 231.5] #231.5=100, 150=10
-            sc.blank()
-            print('---------------\n')
-            print(f'Beta: {beta}, goodseeds: {len(goodseeds)}')
-            print('---------------\n')
-            if len(goodseeds) > 0:
-                s0 = make_sim(seed=1, beta=beta, end_day=data_end, verbose=0.1)
-                for seed in goodseeds:
-                    sim = s0.copy()
-                    sim['rand_seed'] = seed
-                    sim.set_seed()
-                    sim.label = f"Sim {seed}"
-                    sims.append(sim)
+            for dn, delta_beta in enumerate(delta_betas):
+                goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 200] #231.5=100, 150=10
+                sc.blank()
+                print('---------------\n')
+                print(f'Beta: {beta}, delta_beta: {delta_beta}, goodseeds: {len(goodseeds)}')
+                print('---------------\n')
+                if len(goodseeds) > 0:
+                    s0 = make_sim(seed=1, beta=beta, delta_beta=delta_beta, end_day=data_end, verbose=0.1)
+                    for seed in goodseeds:
+                        sim = s0.copy()
+                        sim['rand_seed'] = seed
+                        sim.set_seed()
+                        sim.label = f"Sim {seed}"
+                        sims.append(sim)
 
         msim = cv.MultiSim(sims)
         msim.run()
