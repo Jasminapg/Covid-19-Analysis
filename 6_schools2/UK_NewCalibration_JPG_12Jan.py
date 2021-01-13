@@ -19,6 +19,7 @@ cv.git_info('covasim_version.json')
 do_plot = 1
 do_save = 1
 save_sim = 1
+keep_people = 1
 do_show = 0
 verbose = 1
 seed    = 1
@@ -36,7 +37,7 @@ to_plot = sc.objdict({
 runoptions = ['quickfit', # Does a quick preliminary calibration. Quick to run, ~30s
               'scens' # Runs the 3 scenarios
               ]
-whattorun = runoptions[1] #Select which of the above to run
+whattorun = runoptions[0] #Select which of the above to run
 
 # Filepaths
 data_path = '../UK_Covid_cases_january03.xlsx'
@@ -256,12 +257,14 @@ if __name__ == '__main__':
             sim.label = f"Sim {seed}"
             sims.append(sim)
         msim = cv.MultiSim(sims)
-        msim.run()
+        msim.run(keep_people=keep_people)
         #msim.reduce()
-        msim.reduce(quantiles = [0.10,0.90])  
         if do_plot:
+            msim.reduce(quantiles=[0.10, 0.90])
             msim.plot(to_plot=to_plot, do_save=True, do_show=False, fig_path=f'uk.png',
                       legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=60, n_cols=2)
+        if save_sim:
+                msim.save(f'{resfolder}/uk_sim.obj',keep_people=keep_people)
 
 
     # Run scenarios

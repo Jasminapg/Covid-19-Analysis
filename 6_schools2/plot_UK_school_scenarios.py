@@ -12,8 +12,8 @@ from matplotlib.collections import LineCollection
 # Paths and filenames
 figsfolder = 'figs'
 resfolder = 'results'
-scenarios = ['staggeredPNL', 'primaryPNL', 'FNL']
-labels = ['Staggered PNL', 'Primary-only PNL', 'FNL']
+scenarios = ['FNL', 'primaryPNL', 'staggeredPNL']
+labels = ['FNL', 'Primary-only PNL', 'Staggered PNL']
 T = sc.tic()
 
 # Define plotting functions
@@ -222,7 +222,7 @@ bar_ax = pl.axes([xgapl+xgapm+dx1, ygapb, dx2, dy])
 for sn,scen in enumerate(scenarios):
     bar_ax.bar(x[sn], data[sn]/1e3, width, color=colors[sn], alpha=1.0)
 
-bar_ax.set_xticklabels(['', 'Staggered\nPNL', 'Primary-only\nPNL', 'FNL'])
+bar_ax.set_xticklabels(['', 'FNL', 'Primary-only\nPNL', 'Staggered\nPNL'])
 sc.boxoff()
 sc.commaticks()
 bar_ax.set_ylabel('Total estimated infections\nJan 4 - Feb 28 (000s)')
