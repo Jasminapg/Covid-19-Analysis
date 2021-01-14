@@ -28,8 +28,8 @@ ax   = pl.axes([0.1, 0.11, 0.85, 0.85])
 
 msim = sc.loadobj(f'{resfolder}/uk_sim_FNL.obj')
 sim = msim.base_sim
-#tt = sim.make_transtree()
-tt = sc.loadobj(f'{resfolder}/tt.obj')
+tt = sim.make_transtree()
+#tt = sc.loadobj(f'{resfolder}/tt.obj')
 layer_keys = list(sim.people.layer_keys())
 layer_mapping = {k:i for i,k in enumerate(layer_keys)}
 n_layers = len(layer_keys)
