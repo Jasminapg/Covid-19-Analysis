@@ -19,6 +19,7 @@ cv.git_info('covasim_version.json')
 do_plot = 1
 do_save = 1
 save_sim = 1
+plot_hist = 1 # Whether to plot an age histogram
 do_show = 0
 verbose = 1
 seed    = 1
@@ -38,7 +39,7 @@ to_plot = sc.objdict({
 runoptions = ['quickfit', # Does a quick preliminary calibration. Quick to run, ~30s
               'scens', # Runs the 3 scenarios
               'devel']
-whattorun = runoptions[1] #Select which of the above to run
+whattorun = runoptions[0] #Select which of the above to run
 
 # Filepaths
 data_path = 'UK_Covid_cases_january25.xlsx'
@@ -82,6 +83,7 @@ def make_sim(seed, beta, calibration=True, scenario=None, delta_beta=1.6, future
         verbose      = verbose,
         rel_severe_prob = 0.4,
         rel_crit_prob = 2.3,
+        analyzers     = [cv.age_histogram(datafile='uk_deaths_by_age.xlsx', edges=np.concatenate([np.linspace(0, 90, 19),np.array([100])]))]
         #rel_death_prob=1.5,
     )
 
@@ -255,7 +257,7 @@ def make_sim(seed, beta, calibration=True, scenario=None, delta_beta=1.6, future
                                                    take_prob=1.0, rel_symp=0.05,
                                                  rel_trans=0.9, cumulative=[0.7, 1.0], dose_priority=[1, 0.1])]
     
-    analyzers = []
+    analyzers = sim['analyzers']
     analyzers +=  [utils.record_dose_flows(vacc_class=utils.two_dose_daily_delayed)]
 
 
@@ -297,11 +299,10 @@ if __name__ == '__main__':
         msim.run()
         #msim.reduce()
         msim.reduce(quantiles = [0.25,0.75]) 
-        sim.to_excel('my-sim.xlsx')
+        #sim.to_excel('my-sim.xlsx')
         if do_plot:
             msim.plot(to_plot=to_plot, do_save=True, do_show=False, fig_path=f'uk.png',
                       legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=60, n_cols=2)
-
 
     # Run scenarios
     elif whattorun=='scens':
@@ -341,6 +342,7 @@ if __name__ == '__main__':
 
             print(f'... completed scenario: {scenname}')
             sc.toc(T) 
+
     # Devel scenario
     elif whattorun == 'devel':
         s0 = make_sim(seed=1, beta=0.00815, end_day=data_end, verbose=0.1)
@@ -348,3 +350,72 @@ if __name__ == '__main__':
         s0.plot(to_plot=to_plot)
         # s0.save('devel.sim', keep_people=True)
 
+
+# Add histogram
+if plot_hist:
+
+    aggregate = True
+
+    agehists = []
+    for s,sim in enumerate(msim.sims):
+        agehist = sim['analyzers'][0]
+        if s == 0:
+            age_data = agehist.data
+        agehists.append(agehist.hists[-1])
+    raw_x = age_data['age'].values
+    raw_deaths = age_data['cum_deaths'].values
+
+    if aggregate:
+        x = ["0-29", "30-64", "65-79", "80+"]
+        deaths = [raw_deaths[0:6].sum(), raw_deaths[6:13].sum(), raw_deaths[13:16].sum(), raw_deaths[16:].sum()]
+    else:
+        x = ["0-4", "5-9", "10-14", "15-19", "20-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59", "60-64", "65-69", "70-74", "75-79", "80-84", "85-89", "90+"] #["0-29", "30-54", "55+"]
+        deaths = raw_deaths
+
+    # From the model
+    mdeathlist = []
+    for hists in agehists:
+        mdeathlist.append(hists['dead'])
+    mdeatharr = np.array(mdeathlist)
+    low_q = 0.1
+    high_q = 0.9
+    raw_mdbest = pl.mean(mdeatharr, axis=0)
+    raw_mdlow  = pl.quantile(mdeatharr, q=low_q, axis=0)
+    raw_mdhigh = pl.quantile(mdeatharr, q=high_q, axis=0)
+
+    if aggregate:
+        mdbest = [raw_mdbest[0:6].sum(), raw_mdbest[6:13].sum(), raw_mdbest[13:16].sum(), raw_mdbest[16:].sum()]
+        mdlow = [raw_mdlow[0:6].sum(), raw_mdlow[6:13].sum(), raw_mdlow[13:16].sum(), raw_mdlow[16:].sum()]
+        mdhigh = [raw_mdhigh[0:6].sum(), raw_mdhigh[6:13].sum(), raw_mdhigh[13:16].sum(), raw_mdhigh[16:].sum()]
+    else:
+        mdbest = raw_mdbest
+        mdlow = raw_mdlow
+        mdhigh = raw_mdhigh
+
+    # Plotting
+    font_size = 30
+    font_family = 'Libertinus Sans'
+    pl.rcParams['font.size'] = font_size
+    pl.rcParams['font.family'] = font_family
+    pl.figure(figsize=(24, 16))
+    w = 0.4
+    off = .8
+
+    ax1s = pl.axes([0.07, 0.07, 0.9, 0.9])
+    c1 = [0.3,0.3,0.6]
+    c2 = [0.6,0.7,0.9]
+    X = np.arange(len(x))
+    XX = X+w-off
+    pl.bar(X, deaths, width=w, label='Data', facecolor=c1)
+    pl.bar(XX, mdbest, width=w, label='Model', facecolor=c2)
+    for i,ix in enumerate(XX):
+        pl.plot([ix,ix], [mdlow[i], mdhigh[i]], c='k')
+    ax1s.set_xticks((X+XX)/2)
+    ax1s.set_xticklabels(x)
+    pl.xlabel('Age')
+    pl.ylabel('Deaths')
+    sc.boxoff(ax1s)
+    pl.legend(frameon=False, bbox_to_anchor=(0.3,0.7))
+
+    plotname = 'uk_deaths_by_age_agg.png' if aggregate else 'uk_deaths_by_age.png'
+    cv.savefig(plotname, dpi=100)
