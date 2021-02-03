@@ -354,7 +354,7 @@ if __name__ == '__main__':
 # Add histogram
 if plot_hist:
 
-    aggregate = True
+    aggregate = False
 
     agehists = []
     for s,sim in enumerate(msim.sims):
@@ -364,26 +364,37 @@ if plot_hist:
         agehists.append(agehist.hists[-1])
     raw_x = age_data['age'].values
     raw_deaths = age_data['cum_deaths'].values
+    raw_pos = age_data['cum_diagnoses'].values
 
     if aggregate:
         x = ["0-29", "30-64", "65-79", "80+"]
         deaths = [raw_deaths[0:6].sum(), raw_deaths[6:13].sum(), raw_deaths[13:16].sum(), raw_deaths[16:].sum()]
+        pos = [raw_pos[0:6].sum(), raw_pos[6:13].sum(), raw_pos[13:16].sum(), raw_pos[16:].sum()]
     else:
         x = ["0-4", "5-9", "10-14", "15-19", "20-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59", "60-64", "65-69", "70-74", "75-79", "80-84", "85-89", "90+"] #["0-29", "30-54", "55+"]
         deaths = raw_deaths
+        pos = raw_pos
 
     # From the model
-    mdeathlist = []
+    mposlist, mdeathlist = [], []
     for hists in agehists:
+        mposlist.append(hists['diagnosed'])
         mdeathlist.append(hists['dead'])
     mdeatharr = np.array(mdeathlist)
+    mposarr = np.array(mposlist)
     low_q = 0.1
     high_q = 0.9
     raw_mdbest = pl.mean(mdeatharr, axis=0)
     raw_mdlow  = pl.quantile(mdeatharr, q=low_q, axis=0)
     raw_mdhigh = pl.quantile(mdeatharr, q=high_q, axis=0)
+    raw_mpbest = pl.mean(mposarr, axis=0)
+    raw_mplow  = pl.quantile(mposarr, q=low_q, axis=0)
+    raw_mphigh = pl.quantile(mposarr, q=high_q, axis=0)
 
     if aggregate:
+        mpbest = [raw_mpbest[0:6].sum(), raw_mpbest[6:13].sum(), raw_mpbest[13:16].sum(), raw_mpbest[16:].sum()]
+        mplow = [raw_mplow[0:6].sum(), raw_mplow[6:13].sum(), raw_mplow[13:16].sum(), raw_mplow[16:].sum()]
+        mphigh = [raw_mphigh[0:6].sum(), raw_mphigh[6:13].sum(), raw_mphigh[13:16].sum(), raw_mphigh[16:].sum()]
         mdbest = [raw_mdbest[0:6].sum(), raw_mdbest[6:13].sum(), raw_mdbest[13:16].sum(), raw_mdbest[16:].sum()]
         mdlow = [raw_mdlow[0:6].sum(), raw_mdlow[6:13].sum(), raw_mdlow[13:16].sum(), raw_mdlow[16:].sum()]
         mdhigh = [raw_mdhigh[0:6].sum(), raw_mdhigh[6:13].sum(), raw_mdhigh[13:16].sum(), raw_mdhigh[16:].sum()]
@@ -391,31 +402,54 @@ if plot_hist:
         mdbest = raw_mdbest
         mdlow = raw_mdlow
         mdhigh = raw_mdhigh
+        mpbest = raw_mpbest
+        mplow = raw_mplow
+        mphigh = raw_mphigh
 
     # Plotting
-    font_size = 30
+    font_size = 20
     font_family = 'Libertinus Sans'
     pl.rcParams['font.size'] = font_size
     pl.rcParams['font.family'] = font_family
-    pl.figure(figsize=(24, 16))
+    pl.figure(figsize=(24, 8))
     w = 0.4
     off = .8
-
-    ax1s = pl.axes([0.07, 0.07, 0.9, 0.9])
-    c1 = [0.3,0.3,0.6]
-    c2 = [0.6,0.7,0.9]
+    ax = {}
+    xl, xm, xr, yb, yt = 0.07, 0.07, 0.01, 0.07, 0.01
+    dx = (1-(xl+xm+xr))/2
+    dy = 1-(yb+yt)
     X = np.arange(len(x))
     XX = X+w-off
+
+    # Diagnoses
+    ax[0] = pl.axes([xl, yb, dx, dy])
+    c1 = [0.3,0.3,0.6] # diags
+    c2 = [0.6,0.7,0.9] #diags
+    pl.bar(X, pos, width=w, label='Data', facecolor=c1)
+    pl.bar(XX, mpbest, width=w, label='Model', facecolor=c2)
+    for i,ix in enumerate(XX):
+        pl.plot([ix,ix], [mplow[i], mphigh[i]], c='k')
+    ax[0].set_xticks((X+XX)/2)
+    ax[0].set_xticklabels(x)
+    pl.xlabel('Age')
+    pl.ylabel('Diagnoses')
+    sc.boxoff(ax[0])
+    pl.legend(frameon=False, bbox_to_anchor=(0.3,0.7))
+
+    # Deaths
+    ax[1] = pl.axes([xl+dx+xm, yb, dx, dy])
+    c1 = [0.5, 0.0, 0.0] # deaths
+    c2 = [0.9, 0.4, 0.3] # deaths
     pl.bar(X, deaths, width=w, label='Data', facecolor=c1)
     pl.bar(XX, mdbest, width=w, label='Model', facecolor=c2)
     for i,ix in enumerate(XX):
         pl.plot([ix,ix], [mdlow[i], mdhigh[i]], c='k')
-    ax1s.set_xticks((X+XX)/2)
-    ax1s.set_xticklabels(x)
+    ax[1].set_xticks((X+XX)/2)
+    ax[1].set_xticklabels(x)
     pl.xlabel('Age')
     pl.ylabel('Deaths')
-    sc.boxoff(ax1s)
+    sc.boxoff(ax[1])
     pl.legend(frameon=False, bbox_to_anchor=(0.3,0.7))
 
-    plotname = 'uk_deaths_by_age_agg.png' if aggregate else 'uk_deaths_by_age.png'
+    plotname = 'uk_stats_by_age_agg.png' if aggregate else 'uk_stats_by_age.png'
     cv.savefig(plotname, dpi=100)
