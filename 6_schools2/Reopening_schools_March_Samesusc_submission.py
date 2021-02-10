@@ -252,7 +252,7 @@ def make_sim(seed, beta, calibration=True, scenario=None, delta_beta=1.6, future
         #cv.vaccine(days=[0,14], rel_sus=0.4, rel_symp=0.2, cumulative=[0.7, 0.3])]    
     
     # vaccination interventions
-    interventions += [utils.two_dose_daily_delayed(200e3, start_day=tti_day_vac, dose_delay=14, delay=7*7,
+    interventions += [utils.two_dose_daily_delayed(200e3, start_day=tti_day_vac, dose_delay=14, delay=10*7,
                                                    take_prob=1.0, rel_symp=0.05,
                                                  rel_trans=0.9, cumulative=[0.7, 1.0], dose_priority=[1, 0.1])]
     
