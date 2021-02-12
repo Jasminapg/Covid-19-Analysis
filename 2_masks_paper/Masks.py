@@ -12,7 +12,7 @@ import matplotlib as mplt
 # Settings and initialisation
 ########################################################################
 # Check version
-cv.check_version('2.0.0')
+cv.check_version('2.0.2')
 cv.git_info('covasim_version.json')
 
 # Saving and plotting settings
@@ -40,7 +40,7 @@ runoptions = ['quickfit', # Does a quick preliminary calibration. Quick to run, 
 whattorun = runoptions[0] #Select which of the above to run
 
 # Filepaths
-data_path = 'UK_Covid_cases_august28.xlsx'
+data_path = '../UK_Covid_cases_august28.xlsx'
 resfolder = 'results'
 
 # Important dates
