@@ -245,8 +245,8 @@ if __name__ == '__main__':
         # Figure out the seeds that give a good fit
         mismatches = np.array([sim.compute_fit().mismatch for sim in msim.sims])
         threshold = np.quantile(mismatches, 0.01) # Take the best 1%
-        goodseeds = [i for i in range(n_runs) if mismatches[i] < threshold]
-        sc.saveobj(f'{resfolder}/goodseeds.obj',goodseeds)
+        goodseeds = [i for i in range(len(mismatches)) if mismatches[i] < threshold]
+        sc.saveobj(f'{resfolder}/goodseeds2.obj',goodseeds)
 
 
     # Run calibration with best-fitting seeds and parameters
