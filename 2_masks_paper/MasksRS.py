@@ -227,7 +227,7 @@ if __name__ == '__main__':
 
     # Quick calibration
     if whattorun=='quickfit':
-        s0 = make_sim(seed=1, beta=0.0079, end_day='2020-09-01', verbose=0.1)
+        s0 = make_sim(seed=1, beta=0.00748, end_day='2020-09-30', verbose=0.1)
         sims = []
         for seed in range(30):
             sim = s0.copy()
@@ -237,7 +237,7 @@ if __name__ == '__main__':
             sims.append(sim)
         msim = cv.MultiSim(sims)
         msim.run()
-        msim.reduce(quantiles = [0.10,0.90])
+        msim.reduce(quantiles = [0.1,0.90])
         if do_plot:
             msim.plot(to_plot=to_plot, do_save=True, do_show=False, fig_path=f'Masks.png',
                       legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50, n_cols=2)

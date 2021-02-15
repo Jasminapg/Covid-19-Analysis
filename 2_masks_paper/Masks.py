@@ -12,7 +12,7 @@ import matplotlib as mplt
 # Settings and initialisation
 ########################################################################
 # Check version
-cv.check_version('2.0.0')
+cv.check_version('2.0.2')
 cv.git_info('covasim_version.json')
 
 # Saving and plotting settings
@@ -32,15 +32,15 @@ to_plot = sc.objdict({
 
 # Define what to run
 runoptions = ['quickfit', # Does a quick preliminary calibration. Quick to run, ~30s
-              'fullfit',  # Searches over parameters and seeds (10,000 runs) and calculates the mismatch for each. Slow to run: ~1hr
-              'finialisefit', # Filters the 10,000 runs from the previous step, selects the best-fitting ones, and runs these
+              'fullfit', # Sweeps over many seeds to find the best fitting ones
+              'finalisefit', # Processes the results of the previous step to produce a calibration with the best seeds
               'scens', # Takes the best-fitting runs and projects these forward under different mask and TTI assumptions
               'tti_sweeps', # Sweeps over future testing/tracing values to create data for heatmaps
               ]
-whattorun = runoptions[0] #Select which of the above to run
+whattorun = runoptions[2] #Select which of the above to run
 
 # Filepaths
-data_path = '../UK_Covid_cases_august28.xlsx'
+data_path = 'UK_Covid_cases_august28.xlsx'
 resfolder = 'results'
 
 # Important dates
@@ -131,7 +131,17 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
     w_beta = cv.change_beta(days=beta_days, changes=[c[2] for c in beta_dict.values()], layers='w')
     c_beta = cv.change_beta(days=beta_days, changes=[c[3] for c in beta_dict.values()], layers='c')
 
-    interventions = [h_beta, w_beta, s_beta, c_beta]
+    # Add a new change in beta to represent the takeover of the novel variant VOC 202012/01
+    # Assume that the new variant is 60% more transmisible (https://cmmid.github.io/topics/covid19/uk-novel-variant.html,
+    # Assume that between Nov 1 and Jan 30, the new variant grows from 0-100% of cases
+    voc_days   = np.linspace(sim.day('2020-08-01'), sim.day('2021-01-30'), 31)
+    voc_prop   = 0.6/(1+np.exp(-0.075*(voc_days-sim.day('2020-09-30')))) # Use a logistic growth function to approximate fig 2A of https://cmmid.github.io/topics/covid19/uk-novel-variant.html
+    voc_change = voc_prop*1.63 + (1-voc_prop)*1.
+    voc_beta = cv.change_beta(days=voc_days,
+                              changes=voc_change)
+
+    interventions = [h_beta, w_beta, s_beta, c_beta, voc_beta]    
+
 
     # ADD TEST AND TRACE INTERVENTIONS  
     tc_day = sim.day('2020-03-16') #intervention of some testing (tc) starts on 16th March and we run until 1st April when it increases
@@ -196,11 +206,12 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
 ########################################################################
 if __name__ == '__main__':
 
-    betas = [i / 10000 for i in range(72, 77, 1)]
+    beta = 0.00748
+    n_runs = 100
 
     # Quick calibration
     if whattorun=='quickfit':
-        s0 = make_sim(seed=1, beta=0.00748, end_day='2020-09-10', verbose=0.1)
+        s0 = make_sim(seed=1, beta=beta, end_day='2020-09-10', verbose=0.1)
         sims = []
         for seed in range(30):
             sim = s0.copy()
@@ -214,58 +225,52 @@ if __name__ == '__main__':
         if do_plot:
             msim.plot(to_plot=to_plot, do_save=True, do_show=False, fig_path=f'Masks.png',
                       legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50, n_cols=2)
-    
+
 
     # Full parameter/seed search
-    elif whattorun=='fullfit':
-        fitsummary = []
-        for beta in betas:
-            sc.blank()
-            print('---------------\n')
-            print(f'Beta: {beta}... ')
-            print('---------------\n')
-            s0 = make_sim(seed=1, beta=beta, end_day=data_end)
-            sims = []
-            for seed in range(n_runs):
-                sim = s0.copy()
-                sim['rand_seed'] = seed
-                sim.set_seed()
-                sim.label = f"Sim {seed}"
-                sims.append(sim)
-            msim = cv.MultiSim(sims)
-            msim.run()
-            fitsummary.append([sim.compute_fit().mismatch for sim in msim.sims])
+    elif whattorun == 'fullfit':
 
-        sc.saveobj(f'{resfolder}/fitsummary.obj',fitsummary)
+        fitsummary = []
+        s0 = make_sim(seed=1, beta=beta, end_day='2020-08-25', verbose=-1)
+        sims = []
+        for seed in range(n_runs):
+            sim = s0.copy()
+            sim['rand_seed'] = seed
+            sim.set_seed()
+            sim.label = f"Sim {seed}"
+            sims.append(sim)
+        msim = cv.MultiSim(sims)
+        msim.run()
+
+        # Figure out the seeds that give a good fit
+        mismatches = np.array([sim.compute_fit().mismatch for sim in msim.sims])
+        threshold = np.quantile(mismatches, 0.1) # Take the best 1%
+        goodseeds = [i for i in range(n_runs) if mismatches[i] < threshold]
+        sc.saveobj(f'{resfolder}/goodseeds.obj',fitsummary)
+
 
     # Run calibration with best-fitting seeds and parameters
     elif whattorun=='finialisefit':
         sims = []
-        fitsummary = sc.loadobj(f'{resfolder}/fitsummary.obj')
-        for bn, beta in enumerate(betas):
-            goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 163]
-            sc.blank()
-            print('---------------\n')
-            print(f'Beta: {beta}, goodseeds: {len(goodseeds)}')
-            print('---------------\n')
-            if len(goodseeds) > 0:
-                s0 = make_sim(seed=1, beta=beta, end_day=data_end)
-                for seed in goodseeds:
-                    sim = s0.copy()
-                    sim['rand_seed'] = seed
-                    sim.set_seed()
-                    sim.label = f"Sim {seed}"
-                    sims.append(sim)
+        goodseeds = sc.loadobj(f'{resfolder}/goodseeds.obj')
+        s0 = make_sim(seed=1, beta=beta, end_day='2020-08-25', verbose=-1)
+        sims = []
+        for seed in goodseeds:
+            sim = s0.copy()
+            sim['rand_seed'] = seed
+            sim.set_seed()
+            sim.label = f"Sim {seed}"
+            sims.append(sim)
+        msim = cv.MultiSim(sims)
+        msim.run()
 
-#        msim = cv.MultiSim(sims)
-#        msim.run()
+        if save_sim:
+            msim.save(f'{resfolder}/uk_sim.obj')
+        if do_plot:
+            msim.reduce()
+            msim.plot(to_plot=to_plot, do_save=do_save, do_show=False, fig_path=f'uk.png',
+                      legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50, n_cols=2)
 
-#        if save_sim:
-#            msim.save(f'{resfolder}/uk_sim.obj')
-#        if do_plot:
-#            msim.reduce()
-#            msim.plot(to_plot=to_plot, do_save=do_save, do_show=False, fig_path=f'uk.png',
-#                      legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50, n_cols=2)
 
 
     # Run scenarios with best-fitting seeds and parameters
@@ -284,24 +289,19 @@ if __name__ == '__main__':
             print('---------------\n')
             sc.blank()
             sims_cur, sims_opt = [], []
-            fitsummary = sc.loadobj(f'{resfolder}/fitsummary.obj')
-
-            for bn, beta in enumerate(betas):
-                goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 163]
-                if len(goodseeds) > 0:
-                    s_cur = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=None, end_day='2021-12-31')
-                    s_opt = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=future_symp_test, end_day='2021-12-31')
-                    for seed in goodseeds:
-                        sim_cur = s_cur.copy()
-                        sim_cur['rand_seed'] = seed
-                        sim_cur.set_seed()
-                        sim_cur.label = f"Sim {seed}"
-                        sims_cur.append(sim_cur)
-                        sim_opt = s_opt.copy()
-                        sim_opt['rand_seed'] = seed
-                        sim_opt.set_seed()
-                        sim_opt.label = f"Sim {seed}"
-                        sims_opt.append(sim_opt)
+            s_cur = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=None, end_day='2020-12-31', verbose=0.1)
+            s_opt = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=future_symp_test, end_day='2020-12-31', verbose=0.1)
+            for seed in range(30):
+                sim_cur = s_cur.copy()
+                sim_cur['rand_seed'] = seed
+                sim_cur.set_seed()
+                sim_cur.label = f"Sim {seed}"
+                sims_cur.append(sim_cur)
+                sim_opt = s_opt.copy()
+                sim_opt['rand_seed'] = seed
+                sim_opt.set_seed()
+                sim_opt.label = f"Sim {seed}"
+                sims_opt.append(sim_opt)
 
             msim_cur = cv.MultiSim(sims_cur)
             msim_cur.run()
@@ -342,18 +342,14 @@ if __name__ == '__main__':
                     print(f'Scenario: {scenname}, testing: {future_symp_test}, tracing: {future_t_eff}')
                     print('--------------- ')
                     sims = []
-                    fitsummary = sc.loadobj(f'{resfolder}/fitsummary.obj')
 
-                    for bn, beta in enumerate(betas):
-                        goodseeds = [i for i in range(n_runs) if fitsummary[bn][i] < 125.5] # Take the best 10
-                        if len(goodseeds) > 0:
-                            s0 = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=daily_test, future_t_eff=future_t_eff, end_day='2021-12-31')
-                            for seed in goodseeds:
-                                sim = s0.copy()
-                                sim['rand_seed'] = seed
-                                sim.set_seed()
-                                sim.label = f"Sim {seed}"
-                                sims.append(sim)
+                    s0 = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=daily_test, future_t_eff=future_t_eff, end_day='2021-12-31')
+                    for seed in goodseeds:
+                        sim = s0.copy()
+                        sim['rand_seed'] = seed
+                        sim.set_seed()
+                        sim.label = f"Sim {seed}"
+                        sims.append(sim)
 
                     msim = cv.MultiSim(sims)
                     msim.run(verbose=-1)
