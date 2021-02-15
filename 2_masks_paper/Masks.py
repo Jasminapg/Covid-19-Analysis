@@ -232,7 +232,7 @@ if __name__ == '__main__':
         fitsummary = []
         s0 = make_sim(seed=1, beta=beta, end_day='2020-08-25', verbose=-1)
         sims = []
-        for seed in range(n_runs):
+        for seed in range(n_runs+1,n_runs*2):
             sim = s0.copy()
             sim['rand_seed'] = seed
             sim.set_seed()
@@ -240,6 +240,7 @@ if __name__ == '__main__':
             sims.append(sim)
         msim = cv.MultiSim(sims)
         msim.run()
+#        msim.run(par_args={'n_cpus':24})
 
         # Figure out the seeds that give a good fit
         mismatches = np.array([sim.compute_fit().mismatch for sim in msim.sims])
