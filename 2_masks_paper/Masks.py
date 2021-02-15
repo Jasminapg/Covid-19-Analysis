@@ -232,7 +232,7 @@ if __name__ == '__main__':
         fitsummary = []
         s0 = make_sim(seed=1, beta=beta, end_day='2020-08-25', verbose=-1)
         sims = []
-        for seed in range(n_runs+1,n_runs*2):
+        for seed in range(n_runs*2,n_runs*3):
             sim = s0.copy()
             sim['rand_seed'] = seed
             sim.set_seed()
@@ -246,7 +246,7 @@ if __name__ == '__main__':
         mismatches = np.array([sim.compute_fit().mismatch for sim in msim.sims])
         threshold = np.quantile(mismatches, 0.01) # Take the best 1%
         goodseeds = [i for i in range(len(mismatches)) if mismatches[i] < threshold]
-        sc.saveobj(f'{resfolder}/goodseeds2.obj',goodseeds)
+        sc.saveobj(f'{resfolder}/goodseeds3.obj',goodseeds)
 
 
     # Run calibration with best-fitting seeds and parameters
