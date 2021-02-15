@@ -207,7 +207,7 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
 if __name__ == '__main__':
 
     beta = 0.00748
-    n_runs = 100
+    n_runs = 10
 
     # Quick calibration
     if whattorun=='quickfit':
@@ -246,11 +246,11 @@ if __name__ == '__main__':
         mismatches = np.array([sim.compute_fit().mismatch for sim in msim.sims])
         threshold = np.quantile(mismatches, 0.1) # Take the best 1%
         goodseeds = [i for i in range(n_runs) if mismatches[i] < threshold]
-        sc.saveobj(f'{resfolder}/goodseeds.obj',fitsummary)
+        sc.saveobj(f'{resfolder}/goodseeds.obj',goodseeds)
 
 
     # Run calibration with best-fitting seeds and parameters
-    elif whattorun=='finialisefit':
+    elif whattorun=='finalisefit':
         sims = []
         goodseeds = sc.loadobj(f'{resfolder}/goodseeds.obj')
         s0 = make_sim(seed=1, beta=beta, end_day='2020-08-25', verbose=-1)
