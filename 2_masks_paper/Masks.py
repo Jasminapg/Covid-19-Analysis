@@ -16,7 +16,7 @@ cv.check_version('2.0.2')
 cv.git_info('covasim_version.json')
 
 # Saving and plotting settings
-do_plot = 1
+do_plot = 0
 do_save = 1
 save_sim = 1
 do_show = 0
