@@ -22,7 +22,6 @@ save_sim = 1
 do_show = 0
 verbose = 1
 seed    = 1
-n_runs = 200
 to_plot = sc.objdict({
     'Cumulative diagnoses': ['cum_diagnoses'],
     'Cumulative infections': ['cum_infections'],
@@ -207,7 +206,7 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
 if __name__ == '__main__':
 
     beta = 0.00748
-    n_runs = 100
+    n_runs = 3000
 
     # Quick calibration
     if whattorun=='quickfit':
@@ -251,7 +250,6 @@ if __name__ == '__main__':
 
     # Run calibration with best-fitting seeds and parameters
     elif whattorun=='finalisefit':
-        sims = []
         goodseeds = sc.loadobj(f'{resfolder}/goodseeds.obj')
         s0 = make_sim(seed=1, beta=beta, end_day='2020-08-25', verbose=-1)
         sims = []
