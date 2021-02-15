@@ -207,7 +207,7 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
 if __name__ == '__main__':
 
     beta = 0.00748
-    n_runs = 10
+    n_runs = 100
 
     # Quick calibration
     if whattorun=='quickfit':
