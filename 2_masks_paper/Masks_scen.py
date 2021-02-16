@@ -8,7 +8,7 @@ import matplotlib as mplt
 # Settings and initialisation
 ########################################################################
 # Check version
-cv.check_version('2.0.0')
+cv.check_version('2.0.2')
 cv.git_info('covasim_version.json')
 
 
