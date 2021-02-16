@@ -278,9 +278,9 @@ if __name__ == '__main__':
 
         # Define scenario to run
         scenarios = sc.odict({
-#            'masks15': 0.15,
+            'masks15': 0.15,
             'masks30': 0.07,
-#            'masks15_notschools': 0.17,
+            'masks15_notschools': 0.17,
             'masks30_notschools': 0.095
         })
 
@@ -291,35 +291,35 @@ if __name__ == '__main__':
             print('---------------\n')
             sc.blank()
             sims_cur, sims_opt = [], []
-            s_cur = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=None, end_day='2020-12-31', verbose=0.1)
-#            s_opt = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=future_symp_test, end_day='2020-12-31', verbose=0.1)
+            s_cur = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=None, end_day='2020-10-23', verbose=0.1)
+            s_opt = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=future_symp_test, end_day='2020-10-23', verbose=0.1)
             for seed in goodseeds:
                 sim_cur = s_cur.copy()
                 sim_cur['rand_seed'] = seed
                 sim_cur.set_seed()
                 sim_cur.label = f"Sim {seed}"
                 sims_cur.append(sim_cur)
-#                sim_opt = s_opt.copy()
-#                sim_opt['rand_seed'] = seed
-#                sim_opt.set_seed()
-#                sim_opt.label = f"Sim {seed}"
-#                sims_opt.append(sim_opt)
+                sim_opt = s_opt.copy()
+                sim_opt['rand_seed'] = seed
+                sim_opt.set_seed()
+                sim_opt.label = f"Sim {seed}"
+                sims_opt.append(sim_opt)
 
             msim_cur = cv.MultiSim(sims_cur)
             msim_cur.run()
-#            msim_opt = cv.MultiSim(sims_opt)
-#            msim_opt.run()
+            msim_opt = cv.MultiSim(sims_opt)
+            msim_opt.run()
 
             if save_sim:
                 msim_cur.save(f'{resfolder}/uk_sim_{scenname}_current.obj')
-#                msim_opt.save(f'{resfolder}/uk_sim_{scenname}_optimal.obj')
+                msim_opt.save(f'{resfolder}/uk_sim_{scenname}_optimal.obj')
             if do_plot:
                 msim_cur.reduce()
                 msim_cur.plot(to_plot=to_plot, do_save=do_save, do_show=False, fig_path=f'uk_{scenname}_current.png',
                           legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50, n_cols=2)
-#                msim_opt.reduce()
-#                msim_opt.plot(to_plot=to_plot, do_save=do_save, do_show=False, fig_path=f'uk_{scenname}_optimal.png',
-#                          legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50, n_cols=2)
+                msim_opt.reduce()
+                msim_opt.plot(to_plot=to_plot, do_save=do_save, do_show=False, fig_path=f'uk_{scenname}_optimal.png',
+                          legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50, n_cols=2)
 
             print(f'... completed scenario: {scenname}')
 
