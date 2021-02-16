@@ -36,7 +36,7 @@ runoptions = ['quickfit', # Does a quick preliminary calibration. Quick to run, 
               'scens', # Takes the best-fitting runs and projects these forward under different mask and TTI assumptions
               'tti_sweeps', # Sweeps over future testing/tracing values to create data for heatmaps
               ]
-whattorun = runoptions[3] #Select which of the above to run
+whattorun = runoptions[-1] #Select which of the above to run
 
 # Filepaths
 data_path = 'UK_Covid_cases_august28.xlsx'
@@ -329,7 +329,8 @@ if __name__ == '__main__':
 
         symp_test_vals = np.linspace(0, 1, 21)
         trace_eff_vals = np.linspace(0, 1, 21)
-        scenarios = ['masks30_notschools','masks15','masks30','masks15_notschools']
+        scenarios = ['masks30','masks30_notschools','masks15','masks15_notschools']
+        goodseeds = sc.loadobj(f'{resfolder}/goodseeds.obj')
 
         # Define scenario to run
         for scenname in scenarios:
@@ -345,7 +346,7 @@ if __name__ == '__main__':
                     print('--------------- ')
                     sims = []
 
-                    s0 = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=daily_test, future_t_eff=future_t_eff, end_day='2021-12-31')
+                    s0 = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=daily_test, future_t_eff=future_t_eff, end_day='2020-10-23')
                     for seed in goodseeds:
                         sim = s0.copy()
                         sim['rand_seed'] = seed

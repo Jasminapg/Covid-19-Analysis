@@ -50,8 +50,8 @@ def plotter(key, sims, ax, label='', ylabel='', low_q=0.05, high_q=0.95, startda
 
     sc.setylim()
 
-    datemarks = pl.array([sim.day('2020-04-01'),sim.day('2020-08-01'),sim.day('2020-12-01'),
-                          sim.day('2021-04-01'),sim.day('2021-08-01'),sim.day('2021-12-01')])
+    datemarks = pl.array([sim.day('2020-03-01'),sim.day('2020-05-01'),sim.day('2020-07-01'),
+                          sim.day('2020-09-01')])
     ax.set_xticks(datemarks)
     pl.ylabel(ylabel)
 
@@ -127,8 +127,8 @@ for tti_scen in ['current', 'optimal']:
 #        pl.figtext(xgapl + (dx + xgapm) * (pn % ncols) + dx, ygapb + (ygapm + dy) * (pn // ncols) + dy, '            24%         ')
         ax[pn].annotate(labels[tti_scen][pn], xy=(700, 340_000), xycoords='data', ha='right', va='top')
         plotter('new_infections', sims[pn], ax[pn])
-        ax[pn].set_ylim(0, 350_000)
-        ax[pn].set_yticks(np.arange(0, 350_000, 50_000))
+        ax[pn].set_ylim(0, 150_000)
+        ax[pn].set_yticks(np.arange(0, 150_000, 25_000))
 
         if (pn%ncols) != 0:
             ax[pn].set_yticklabels([])
