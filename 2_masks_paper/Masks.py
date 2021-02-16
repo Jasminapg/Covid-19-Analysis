@@ -347,7 +347,7 @@ if __name__ == '__main__':
                     sims = []
 
                     s0 = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=daily_test, future_t_eff=future_t_eff, end_day='2020-10-23')
-                    for seed in goodseeds:
+                    for seed in goodseeds[:10]:
                         sim = s0.copy()
                         sim['rand_seed'] = seed
                         sim.set_seed()
