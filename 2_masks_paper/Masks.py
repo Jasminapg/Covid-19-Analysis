@@ -16,7 +16,7 @@ cv.check_version('2.0.2')
 cv.git_info('covasim_version.json')
 
 # Saving and plotting settings
-do_plot = 0
+do_plot = 1
 do_save = 1
 save_sim = 1
 do_show = 0
@@ -36,7 +36,7 @@ runoptions = ['quickfit', # Does a quick preliminary calibration. Quick to run, 
               'scens', # Takes the best-fitting runs and projects these forward under different mask and TTI assumptions
               'tti_sweeps', # Sweeps over future testing/tracing values to create data for heatmaps
               ]
-whattorun = runoptions[1] #Select which of the above to run
+whattorun = runoptions[3] #Select which of the above to run
 
 # Filepaths
 data_path = 'UK_Covid_cases_august28.xlsx'
@@ -206,7 +206,7 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
 if __name__ == '__main__':
 
     beta = 0.00748
-    n_runs = 1000
+    n_runs = 3000
 
     # Quick calibration
     if whattorun=='quickfit':
@@ -232,7 +232,7 @@ if __name__ == '__main__':
         fitsummary = []
         s0 = make_sim(seed=1, beta=beta, end_day='2020-08-25', verbose=-1)
         sims = []
-        for seed in range(n_runs*2, n_runs*3):
+        for seed in range(n_runs):
             sim = s0.copy()
             sim['rand_seed'] = seed
             sim.set_seed()
@@ -246,7 +246,7 @@ if __name__ == '__main__':
         mismatches = np.array([sim.compute_fit().mismatch for sim in msim.sims])
         threshold = np.quantile(mismatches, 0.01) # Take the best 1%
         goodseeds = [i for i in range(len(mismatches)) if mismatches[i] < threshold]
-        sc.saveobj(f'{resfolder}/goodseeds3.obj',goodseeds)
+        sc.saveobj(f'{resfolder}/goodseeds.obj',goodseeds)
 
 
     # Run calibration with best-fitting seeds and parameters
