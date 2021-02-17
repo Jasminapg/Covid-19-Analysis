@@ -172,6 +172,11 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
     #isolation september
     iso_vals2 = [{k:0.7 for k in 'hswc'}]
 
+    t_probs_junejuly = {'h': 1, 's': 0.5, 'w': 0.5, 'c': 0.05}
+    if future_t_eff is None: future_t_eff = 0.5
+    future_t_probs = {'h': 1, 's': future_t_eff, 'w': future_t_eff, 'c': 0.05}
+    trace_d_1      = {'h':0, 's':1, 'w':1, 'c':2}
+
     #testing and isolation intervention
     interventions += [
         cv.test_prob(symp_prob=0.0075, asymp_prob=0.0, symp_quar_prob=0.0, start_day=tc_day, end_day=te_day-1, test_delay=t_delay),
@@ -181,10 +186,8 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
         cv.test_prob(symp_prob=s_prob_july, asymp_prob=0.00075, symp_quar_prob=0.0, start_day=tti_day_july, end_day=tti_day_august-1, test_delay=t_delay),
         cv.test_prob(symp_prob=s_prob_august, asymp_prob=0.00075, symp_quar_prob=0.0, start_day=tti_day_august, end_day=tti_day_sep-1, test_delay=t_delay),
         cv.test_prob(symp_prob=future_symp_test, asymp_prob=0.00075, symp_quar_prob=0.0, start_day=tti_day_sep, test_delay=t_delay),
-        cv.contact_tracing(trace_probs={'h': 1, 's': 0.5, 'w': 0.5, 'c': 0.05},
-                           trace_time={'h': 0, 's': 1, 'w': 1, 'c': 2},
-                           start_day='2020-06-01',
-                           quar_period=10),
+        cv.contact_tracing(trace_probs=t_probs_junejuly, trace_time=trace_d_1, start_day='2020-06-01', end_day='2020-08-31', quar_period=10),
+        cv.contact_tracing(trace_probs=future_t_probs, trace_time=trace_d_1, start_day=tti_day_sep),
         cv.dynamic_pars({'iso_factor': {'days': te_day, 'vals': iso_vals}}),
         cv.dynamic_pars({'iso_factor': {'days': tti_day_august, 'vals': iso_vals1}}),
         cv.dynamic_pars({'iso_factor': {'days': tti_day_sep, 'vals': iso_vals2}}),
