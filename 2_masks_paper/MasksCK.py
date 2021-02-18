@@ -222,7 +222,7 @@ def run_sim(sim, do_load=True, do_save=True, do_shrink=True):
             print(f'WARNING, failed to load cached sim from {cachefile}! Reason: {str(E)}')
     if not sim_loaded:
         sim.run(until=day_before_scens)
-        if do_save:
+        if do_save and not os.path.isfile(cachefile):
             print(f'Saving cache file to {cachefile}')
             sim.save(cachefile, keep_people=True)
 
@@ -391,12 +391,13 @@ if __name__ == '__main__':
             n_sims = n_scenarios*npts**2*max_seeds
             count = 0
             ikw = []
+
             for i_sc,scenname in enumerate(scenarios):
-                for i_fst,future_symp_test in enumerate(symp_test_vals):
-                    print(f'Creating arguments for sim {count} of {n_sims}...')
-                    daily_test = np.round(1 - (1 - future_symp_test) ** (1 / 10), 3) if future_symp_test<1 else 0.4
-                    for i_fte,future_t_eff in enumerate(trace_eff_vals):
-                        for i_s,seed in enumerate(goodseeds):
+                for i_s,seed in enumerate(goodseeds):
+                    for i_fst,future_symp_test in enumerate(symp_test_vals):
+                        print(f'Creating arguments for sim {count} of {n_sims}...')
+                        daily_test = np.round(1 - (1 - future_symp_test) ** (1 / 10), 3) if future_symp_test<1 else 0.4
+                        for i_fte,future_t_eff in enumerate(trace_eff_vals):
                             count += 1
                             meta = sc.objdict()
                             meta.count = count
