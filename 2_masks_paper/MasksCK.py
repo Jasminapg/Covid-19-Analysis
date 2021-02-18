@@ -203,7 +203,7 @@ def make_sim(seed=None, calibration=True, scenario=None, future_symp_test=None, 
 def run_sim(sim, do_load=True, do_save=True, do_shrink=True):
     ''' Run a simulation, loading from cache if possible '''
 
-    print(f'Running sim {meta.inds} ({meta.count} of {meta.n_sims})...')
+    print(f'Running sim {sim.meta.inds} ({sim.meta.count} of {sim.meta.n_sims})...')
 
     # Caching -- WARNING, needs testing!
     seed = sim.meta.vals.seed
@@ -373,8 +373,8 @@ if __name__ == '__main__':
 
         do_load = True # Whether to load files from cache, if available
         do_save = True # Whether to save files to cache, if rerun
-        npts = 41
-        max_seeds = 10
+        npts = 3
+        max_seeds = 2
         symp_test_vals = np.linspace(0, 1, npts)
         trace_eff_vals = np.linspace(0, 1, npts)
         scenarios = ['masks30','masks30_notschools','masks15','masks15_notschools']
