@@ -373,8 +373,8 @@ if __name__ == '__main__':
 
         print(f'Note: you may wish to delete the cache folder {cachefolder} before beginning')
 
-        do_load = True # Whether to load files from cache, if available
-        do_save = True # Whether to save files to cache, if rerun
+        do_load = False # Whether to load files from cache, if available
+        do_save = False  # Whether to save files to cache, if rerun
         npts = 21 #41
         max_seeds = 2 #10
         symp_test_vals = np.linspace(0, 1, npts)
@@ -451,3 +451,10 @@ if __name__ == '__main__':
                 sweep_summary['cum_death'].append(cum_death)
 
             cv.save(f'{resfolder}/uk_tti_sweeps_{scenname}.obj', sweep_summary)
+
+
+Saving cache file to cache/cached_sim220.sim
+Running sim [0, 18, 6, 1] (770 of 3528)...
+Warning, string pickle loading failed: Ran out of input
+Warning, bytes pickle loading failed: Ran out of input
+WARNING, failed to load cached sim from cache/cached_sim220.sim! Reason: 'type' object does not support item assignment
