@@ -109,7 +109,7 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
         elif scenario == 'masks30_notschools':
             sbv, wbv, cbv = 0.90,  0.49,  0.63
 
-        beta_scens = sc.odict({'2020-09-02': [1.25, sbv1, wbv1, cbv1],
+        beta_scens = sc.odict({'2020-09-02': [1.25, sbv, wbv, cbv],
                               })
 
         beta_dict = sc.mergedicts(beta_past, beta_scens)
@@ -322,8 +322,8 @@ if __name__ == '__main__':
     # Run scenarios with best-fitting seeds and parameters
     elif whattorun=='tti_sweeps':
 
-        symp_test_vals = np.linspace(0, 1, 21)
-        trace_eff_vals = np.linspace(0, 1, 21)
+        symp_test_vals = np.linspace(0, 1, 41)
+        trace_eff_vals = np.linspace(0, 1, 41)
         scenarios = ['masks30','masks30_notschools','masks15','masks15_notschools']
         goodseeds = sc.loadobj(f'{resfolder}/goodseeds.obj')
 
@@ -341,7 +341,8 @@ if __name__ == '__main__':
                     print('--------------- ')
                     sims = []
 
-                    s0 = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=daily_test, future_t_eff=future_t_eff, end_day='2020-10-23')
+                    s0 = make_sim(goodseeds[0], beta, calibration=False, scenario=scenname, future_symp_test=daily_test, future_t_eff=future_t_eff, end_day='2020-10-23')
+                    s0.run(until='2020-08-31')
                     for seed in goodseeds[:10]:
                         sim = s0.copy()
                         sim['rand_seed'] = seed
