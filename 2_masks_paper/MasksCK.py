@@ -60,7 +60,7 @@ def make_sim(seed=None, calibration=True, scenario=None, future_symp_test=None, 
     # Set the parameters
     beta         = 0.00748 # Calibrated value
     total_pop    = 67.86e6 # UK population size
-    pop_size     = 10e3 # Actual simulated population  # CHANGE
+    pop_size     = 100e3 # Actual simulated population
     pop_scale    = int(total_pop/pop_size)
     pop_type     = 'hybrid'
     pop_infected = 1500
@@ -375,8 +375,8 @@ if __name__ == '__main__':
 
         do_load = True # Whether to load files from cache, if available
         do_save = True # Whether to save files to cache, if rerun
-        npts = 2 # CHANGE
-        max_seeds = 2 # CHANGE
+        npts = 41
+        max_seeds = 10
         symp_test_vals = np.linspace(0, 1, npts)
         trace_eff_vals = np.linspace(0, 1, npts)
         scenarios = ['masks30','masks30_notschools','masks15','masks15_notschools']
