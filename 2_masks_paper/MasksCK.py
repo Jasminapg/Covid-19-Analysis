@@ -200,7 +200,7 @@ def make_sim(seed=None, calibration=True, scenario=None, future_symp_test=None, 
     return sim
 
 
-def run_sim(sim, do_load=True, do_save=True, do_shrink=True):
+def run_sim(sim, do_load=False, do_save=True, do_shrink=True):
     ''' Run a simulation, loading from cache if possible '''
 
     print(f'Running sim {sim.meta.inds} ({sim.meta.count} of {sim.meta.n_sims})...')
