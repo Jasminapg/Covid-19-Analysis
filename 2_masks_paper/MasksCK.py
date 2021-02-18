@@ -60,7 +60,7 @@ def make_sim(seed=None, calibration=True, scenario=None, future_symp_test=None, 
     # Set the parameters
     beta         = 0.00748 # Calibrated value
     total_pop    = 67.86e6 # UK population size
-    pop_size     = 100e3 # Actual simulated population
+    pop_size     = 10e3 # Actual simulated population  # CHANGE
     pop_scale    = int(total_pop/pop_size)
     pop_type     = 'hybrid'
     pop_infected = 1500
@@ -371,10 +371,12 @@ if __name__ == '__main__':
     # Run scenarios with best-fitting seeds and parameters
     elif whattorun=='tti_sweeps':
 
+        print(f'Note: you may wish to delete the cache folder {cachefolder} before beginning')
+
         do_load = True # Whether to load files from cache, if available
         do_save = True # Whether to save files to cache, if rerun
-        npts = 3
-        max_seeds = 2
+        npts = 3 # CHANGE
+        max_seeds = 5 # CHANGE
         symp_test_vals = np.linspace(0, 1, npts)
         trace_eff_vals = np.linspace(0, 1, npts)
         scenarios = ['masks30','masks30_notschools','masks15','masks15_notschools']
@@ -391,13 +393,12 @@ if __name__ == '__main__':
             n_sims = n_scenarios*npts**2*max_seeds
             count = 0
             ikw = []
-
             for i_sc,scenname in enumerate(scenarios):
-                for i_s,seed in enumerate(goodseeds):
-                    for i_fst,future_symp_test in enumerate(symp_test_vals):
-                        print(f'Creating arguments for sim {count} of {n_sims}...')
-                        daily_test = np.round(1 - (1 - future_symp_test) ** (1 / 10), 3) if future_symp_test<1 else 0.4
-                        for i_fte,future_t_eff in enumerate(trace_eff_vals):
+                for i_fst,future_symp_test in enumerate(symp_test_vals):
+                    print(f'Creating arguments for sim {count} of {n_sims}...')
+                    daily_test = np.round(1 - (1 - future_symp_test) ** (1 / 10), 3) if future_symp_test<1 else 0.4
+                    for i_fte,future_t_eff in enumerate(trace_eff_vals):
+                        for i_s,seed in enumerate(goodseeds):
                             count += 1
                             meta = sc.objdict()
                             meta.count = count
