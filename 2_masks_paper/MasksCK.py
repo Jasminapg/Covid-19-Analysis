@@ -426,7 +426,7 @@ if __name__ == '__main__':
         for i_sc in range(n_scenarios):
             for i_fst in range(npts):
                 for i_fte in range(npts):
-                    sim_seeds = sims[i_sc, i_fst, i_fte, :]
+                    sim_seeds = sims[i_sc, i_fst, i_fte, :].tolist()
                     all_sims_semi_flat.append(sim_seeds)
         msims = np.empty((n_scenarios, npts, npts), dtype=object)
         all_msims = sc.parallelize(make_msims, iterarg=all_sims_semi_flat)
