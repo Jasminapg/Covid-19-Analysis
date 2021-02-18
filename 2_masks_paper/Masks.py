@@ -101,23 +101,15 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
 
     if not calibration:
         if scenario == 'masks15':
-            sbv1, sbv2, wbv1, wbv2, cbv1, cbv2 = 0.765, 0.90, 0.595, 0.425, 0.765, 0.595
+            sbv, wbv, cbv = 0.765, 0.595, 0.765
         elif scenario == 'masks30':
-            sbv1, sbv2, wbv1, wbv2, cbv1, cbv2 = 0.63,  0.90, 0.49,  0.35,  0.63,  0.49
+            sbv, wbv, cbv = 0.63,  0.49,  0.63
         elif scenario == 'masks15_notschools':
-            sbv1, sbv2, wbv1, wbv2, cbv1, cbv2 = 0.90,  0.90, 0.595, 0.425, 0.765, 0.595
+            sbv, wbv, cbv = 0.90,  0.595, 0.765
         elif scenario == 'masks30_notschools':
-            sbv1, sbv2, wbv1, wbv2, cbv1, cbv2 = 0.90,  0.90, 0.49,  0.35,  0.63,  0.49
+            sbv, wbv, cbv = 0.90,  0.49,  0.63
 
         beta_scens = sc.odict({'2020-09-02': [1.25, sbv1, wbv1, cbv1],
-                               '2020-10-28': [1.25, 0.00, wbv2, cbv2],
-                               '2020-11-01': [1.25, sbv1, wbv1, cbv1],
-                               '2020-12-23': [1.25, 0.00, wbv2, cbv2],
-                               '2021-01-03': [1.25, sbv1, wbv1, cbv1],
-                               '2021-02-17': [1.25, 0.00, wbv2, cbv2],
-                               '2021-02-21': [1.25, sbv1, wbv1, cbv1],
-                               '2021-04-06': [1.25, 0.00, wbv2, cbv2],
-                               '2021-04-19': [1.25, sbv2, wbv1, cbv1]
                               })
 
         beta_dict = sc.mergedicts(beta_past, beta_scens)

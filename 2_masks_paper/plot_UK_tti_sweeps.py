@@ -46,10 +46,9 @@ ax = {}
 
 # Load all results
 sweep_summaries = {}
-for scen in ['masks15', 'masks30', 'masks15_notschools']: #scenarios:
+for scen in scenarios:
     filepath = f'{resfolder}/uk_tti_sweeps_{scen}.obj'
     sweep_summaries[scen] = sc.loadobj(filepath)
-sweep_summaries['masks30_notschools'] = sweep_summaries['masks30']
 
 msim = sc.loadobj(f'{resfolder}/uk_sim.obj')
 msim.reduce()
