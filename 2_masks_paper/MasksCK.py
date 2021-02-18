@@ -46,6 +46,7 @@ cachefolder = 'cache'
 start_day = '2020-01-21'
 end_day = '2021-03-31'
 data_end = '2020-08-28' # Final date for calibration
+day_before_scens = '2020-08-31'
 
 
 ########################################################################
@@ -204,23 +205,29 @@ def run_sim(sim, do_load=True, do_save=True, do_shrink=True):
 
     print(f'Running sim {meta.inds} ({meta.count} of {meta.n_sims})...')
 
+    # Caching -- WARNING, needs testing!
+    seed = sim.meta.vals.seed
+    cachefile = f'{cachefolder}/cached_sim{seed}.sim'
+    sim_loaded = False
+    if do_load and os.path.isfile(cachefile):
+        try:
+            sim_orig = sim.copy()
+            sim = cv.load(cachefile)
+            sim.meta = sim_orig.meta
+            sim['interventions'] = sim_orig['interventions']
+            for interv in sim['interventions']:
+                interv.initialize(sim)
+            sim_loaded = True
+        except Exception as E:
+            print(f'WARNING, failed to load cached sim from {cachefile}! Reason: {str(E)}')
+    if not sim_loaded:
+        sim.run(until=day_before_scens)
+        if do_save:
+            print(f'Saving cache file to {cachefile}')
+            sim.save(cachefile, keep_people=True)
+
+    # Actually run the sim
     sim.run()
-
-    # # Caching -- not yet implemented
-    # seed = sim.meta.vals.seed
-    # cachefile = f'{cachefolder}/cached_sim{seed}.sim'
-    # sim_loaded = False
-    # if do_load and os.path.isfile(cachefile):
-    #     try:
-    #         sim_partial = cv.load(cachefile)
-    #         sim_loaded = True
-    #     except:
-    #         pass
-
-    # if not sim_loaded:
-    #     pass
-    #     if do_save:
-    #         sim.save(cachefile, keep_people=True)
 
     if do_shrink:
         sim.shrink()
