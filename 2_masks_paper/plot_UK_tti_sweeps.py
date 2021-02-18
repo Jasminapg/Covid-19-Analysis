@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 import seaborn as sns
 import matplotlib.ticker as mtick
+from matplotlib.colors import Normalize
+import os
 
 # Paths and filenames
 figsfolder = 'figs'
@@ -90,10 +92,20 @@ for res,label in resnames.iteritems():
                fontsize=36, fontweight='bold', bbox={'edgecolor': 'none', 'facecolor': 'white', 'alpha': 0.5, 'pad': 4})
 
         ax[pn] = pl.axes([xgapl + (dx + xgapm) * (pn % ncols), ygapb + (ygapm + dy) * (pn // ncols), dx, dy])
+
+        # use seaborn and heatmap without interpolating the heatmap
         ax[pn] = sns.heatmap(dfs[res][scen], xticklabels=4, yticklabels=4, cmap=sns.cm.rocket_r,
                              vmin=0, vmax=cbar_lims[res],
                              cbar=pn==0, cbar_ax=None if pn else cbar_ax,
                              cbar_kws={'label': label})
+
+        # use pylab and imshow's interpolation
+        # im = ax[pn].imshow(dfs[res][scen], cmap=sns.cm.rocket_r,
+        #               norm=Normalize(vmin=0, vmax=cbar_lims[res]),
+        #               label=label,
+        #               interpolation='gaussian'
+        #               )
+
         ax[pn].set_ylim(ax[pn].get_ylim()[::-1])
 
         if (pn%ncols) != 0:
@@ -107,6 +119,9 @@ for res,label in resnames.iteritems():
             ax[pn].set_xlabel('% of contacts traced')
             ax[pn].set_xticklabels([f'{int(i * 100)}%' for i in np.linspace(0, 1, 6)])
 
-    cv.savefig(f'{figsfolder}/fig_sweeps_{res}.png', dpi=100)
+    figdir = os.path.join(figsfolder)
+    os.makedirs(figdir, exist_ok=True)
+    figpath = os.path.join(figdir, f"fig_sweeps_{res}.png")
+    cv.savefig(figpath, dpi=150)
 
 sc.toc(T)
