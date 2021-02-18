@@ -453,8 +453,3 @@ if __name__ == '__main__':
             cv.save(f'{resfolder}/uk_tti_sweeps_{scenname}.obj', sweep_summary)
 
 
-Saving cache file to cache/cached_sim220.sim
-Running sim [0, 18, 6, 1] (770 of 3528)...
-Warning, string pickle loading failed: Ran out of input
-Warning, bytes pickle loading failed: Ran out of input
-WARNING, failed to load cached sim from cache/cached_sim220.sim! Reason: 'type' object does not support item assignment
