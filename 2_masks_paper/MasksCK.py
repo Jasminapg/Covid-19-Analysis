@@ -2,11 +2,10 @@
 UK scenarios for evaluating effectivness of masks
 '''
 
+import os
 import sciris as sc
 import covasim as cv
-import pylab as pl
 import numpy as np
-import matplotlib as mplt
 
 ########################################################################
 # Settings and initialisation
@@ -41,20 +40,25 @@ whattorun = runoptions[-1] #Select which of the above to run
 # Filepaths
 data_path = 'UK_Covid_cases_august28.xlsx'
 resfolder = 'results'
+cachefolder = 'cache'
 
 # Important dates
 start_day = '2020-01-21'
 end_day = '2021-03-31'
 data_end = '2020-08-28' # Final date for calibration
+day_before_scens = '2020-08-31'
 
 
 ########################################################################
 # Create the baseline simulation
 ########################################################################
 
-def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None, future_t_eff=None, end_day=None, verbose=0):
+def make_sim(seed=None, calibration=True, scenario=None, future_symp_test=None, future_t_eff=None, end_day=None, verbose=0, meta=None):
+
+    print(f'Making sim {meta.inds} ({meta.count} of {meta.n_sims})...')
 
     # Set the parameters
+    beta         = 0.00748 # Calibrated value
     total_pop    = 67.86e6 # UK population size
     pop_size     = 100e3 # Actual simulated population
     pop_scale    = int(total_pop/pop_size)
@@ -63,7 +67,7 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
     beta         = beta
     asymp_factor = 2
     contacts     = {'h':3.0, 's':20, 'w':20, 'c':20}
-    beta_layer   = {'h':3.0, 's':1.0, 'w':0.6, 'c':0.3}
+    # beta_layer   = {'h':3.0, 's':1.0, 'w':0.6, 'c':0.3}
     if end_day is None: end_day = '2021-03-31'
 
     pars = sc.objdict(
@@ -134,7 +138,7 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
     interventions = [h_beta, w_beta, s_beta, c_beta] #, voc_beta]
 
 
-    # ADD TEST AND TRACE INTERVENTIONS  
+    # ADD TEST AND TRACE INTERVENTIONS
     tc_day = sim.day('2020-03-16') #intervention of some testing (tc) starts on 16th March and we run until 1st April when it increases
     te_day = sim.day('2020-04-01') #intervention of some testing (te) starts on 1st April and we run until 1st May when it increases
     tt_day = sim.day('2020-05-01') #intervention of increased testing (tt) starts on 1st May
@@ -148,7 +152,7 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
     s_prob_june = 0.02769
     s_prob_july = 0.02769
     s_prob_august = 0.02769
-    
+
     #s_prob_april = 0.008
     #s_prob_may   = 0.03
     #s_prob_june = 0.02
@@ -156,7 +160,7 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
     #s_prob_august = 0.02
     if future_symp_test is None: future_symp_test = s_prob_august
     t_delay       = 1.0
-    
+
     #isolation may-july
     iso_vals = [{k:0.7 for k in 'hswc'}]
     #isolation august
@@ -190,9 +194,55 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
     for intervention in sim['interventions']:
         intervention.do_plot = False
 
-    sim.initialize()
+    # Store metadata
+    sim.meta = meta
 
     return sim
+
+
+def run_sim(sim, do_load=False, do_save=True, do_shrink=True):
+    ''' Run a simulation, loading from cache if possible '''
+
+    print(f'Running sim {sim.meta.inds} ({sim.meta.count} of {sim.meta.n_sims})...')
+
+    # Caching -- WARNING, needs testing!
+    seed = sim.meta.vals.seed
+    cachefile = f'{cachefolder}/cached_sim{seed}.sim'
+    sim_loaded = False
+    if do_load and os.path.isfile(cachefile):
+        try:
+            sim_orig = sim.copy()
+            sim = cv.load(cachefile)
+            sim.meta = sim_orig.meta
+            sim['interventions'] = sim_orig['interventions']
+            for interv in sim['interventions']:
+                interv.initialize(sim)
+            sim_loaded = True
+        except Exception as E:
+            print(f'WARNING, failed to load cached sim from {cachefile}! Reason: {str(E)}')
+    if not sim_loaded:
+        sim.run(until=day_before_scens)
+        if do_save and not os.path.isfile(cachefile):
+            print(f'Saving cache file to {cachefile}')
+            sim.save(cachefile, keep_people=True)
+
+    # Actually run the sim
+    sim.run()
+
+    if do_shrink:
+        sim.shrink()
+
+    return sim
+
+
+def make_msims(sims):
+    ''' Take a slice of sims and turn it into a multisim '''
+    msim = cv.MultiSim(sims)
+    msim.reduce()
+    i_sc, i_fst, i_fte, i_s = sims[0].meta.inds
+    msim.meta = sc.objdict()
+    msim.meta.inds = i_sc, i_fst, i_fte
+    return msim
 
 
 ########################################################################
@@ -200,12 +250,9 @@ def make_sim(seed, beta, calibration=True, scenario=None, future_symp_test=None,
 ########################################################################
 if __name__ == '__main__':
 
-    beta = 0.00748
-    n_runs = 3000
-
     # Quick calibration
     if whattorun=='quickfit':
-        s0 = make_sim(seed=1, beta=beta, end_day='2020-09-10', verbose=0.1)
+        s0 = make_sim(seed=1, end_day='2020-09-10', verbose=0.1)
         sims = []
         for seed in range(30):
             sim = s0.copy()
@@ -217,15 +264,17 @@ if __name__ == '__main__':
         msim.run()
         msim.reduce(quantiles = [0.10,0.90])
         if do_plot:
-            msim.plot(to_plot=to_plot, do_save=True, do_show=False, fig_path=f'Masks.png',
+            msim.plot(to_plot=to_plot, do_save=True, do_show=False, fig_path='Masks.png',
                       legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50, n_cols=2)
 
 
     # Full parameter/seed search
     elif whattorun == 'fullfit':
 
+        n_runs = 3000
+
         fitsummary = []
-        s0 = make_sim(seed=1, beta=beta, end_day='2020-08-25', verbose=-1)
+        s0 = make_sim(seed=1, end_day='2020-08-25', verbose=-1)
         sims = []
         for seed in range(n_runs):
             sim = s0.copy()
@@ -241,13 +290,13 @@ if __name__ == '__main__':
         mismatches = np.array([sim.compute_fit().mismatch for sim in msim.sims])
         threshold = np.quantile(mismatches, 0.01) # Take the best 1%
         goodseeds = [i for i in range(len(mismatches)) if mismatches[i] < threshold]
-        sc.saveobj(f'{resfolder}/goodseeds.obj',goodseeds)
+        cv.save(f'{resfolder}/goodseeds.obj',goodseeds)
 
 
     # Run calibration with best-fitting seeds and parameters
     elif whattorun=='finalisefit':
-        goodseeds = sc.loadobj(f'{resfolder}/goodseeds.obj')
-        s0 = make_sim(seed=1, beta=beta, end_day='2020-08-25', verbose=-1)
+        goodseeds = cv.load(f'{resfolder}/goodseeds.obj')
+        s0 = make_sim(seed=1, end_day='2020-08-25', verbose=-1)
         sims = []
         for seed in goodseeds:
             sim = s0.copy()
@@ -262,14 +311,14 @@ if __name__ == '__main__':
             msim.save(f'{resfolder}/uk_sim.obj')
         if do_plot:
             msim.reduce()
-            msim.plot(to_plot=to_plot, do_save=do_save, do_show=False, fig_path=f'uk.png',
+            msim.plot(to_plot=to_plot, do_save=do_save, do_show=False, fig_path='uk.png',
                       legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50, n_cols=2)
 
 
     # Run scenarios with best-fitting seeds and parameters
     elif whattorun=='scens':
 
-        goodseeds = sc.loadobj(f'{resfolder}/goodseeds.obj')
+        goodseeds = cv.load(f'{resfolder}/goodseeds.obj')
 
         # Define scenario to run
         scenarios = sc.odict({
@@ -286,8 +335,8 @@ if __name__ == '__main__':
             print('---------------\n')
             sc.blank()
             sims_cur, sims_opt = [], []
-            s_cur = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=None, end_day='2020-10-23', verbose=0.1)
-            s_opt = make_sim(1, beta, calibration=False, scenario=scenname, future_symp_test=future_symp_test, end_day='2020-10-23', verbose=0.1)
+            s_cur = make_sim(seed=1, calibration=False, scenario=scenname, future_symp_test=None, end_day='2020-10-23', verbose=0.1)
+            s_opt = make_sim(seed=1, calibration=False, scenario=scenname, future_symp_test=future_symp_test, end_day='2020-10-23', verbose=0.1)
             for seed in goodseeds:
                 sim_cur = s_cur.copy()
                 sim_cur['rand_seed'] = seed
@@ -322,41 +371,77 @@ if __name__ == '__main__':
     # Run scenarios with best-fitting seeds and parameters
     elif whattorun=='tti_sweeps':
 
-        symp_test_vals = np.linspace(0, 1, 41)
-        trace_eff_vals = np.linspace(0, 1, 41)
+        print(f'Note: you may wish to delete the cache folder {cachefolder} before beginning')
+
+        do_load = False # Whether to load files from cache, if available
+        do_save = False  # Whether to save files to cache, if rerun
+        npts = 41
+        max_seeds = 10
+        symp_test_vals = np.linspace(0, 1, npts)
+        trace_eff_vals = np.linspace(0, 1, npts)
         scenarios = ['masks30','masks30_notschools','masks15','masks15_notschools']
-        goodseeds = sc.loadobj(f'{resfolder}/goodseeds.obj')
+        n_scenarios = len(scenarios)
+        goodseeds = cv.load(f'{resfolder}/goodseeds.obj')[:max_seeds]
 
-        # Define scenario to run
-        for scenname in scenarios:
+        sims_file = f'{cachefolder}/all_sims.obj'
+
+        # Make sims
+        sc.heading('Making sims...')
+        if os.path.isfile(sims_file) and do_load: # Don't run, just load
+            sim_configs = cv.load(sims_file)
+        else:
+            n_sims = n_scenarios*npts**2*max_seeds
+            count = 0
+            ikw = []
+            for i_sc,scenname in enumerate(scenarios):
+                for i_fst,future_symp_test in enumerate(symp_test_vals):
+                    print(f'Creating arguments for sim {count} of {n_sims}...')
+                    daily_test = np.round(1 - (1 - future_symp_test) ** (1 / 10), 3) if future_symp_test<1 else 0.4
+                    for i_fte,future_t_eff in enumerate(trace_eff_vals):
+                        for i_s,seed in enumerate(goodseeds):
+                            count += 1
+                            meta = sc.objdict()
+                            meta.count = count
+                            meta.n_sims = n_sims
+                            meta.inds = [i_sc, i_fst, i_fte, i_s]
+                            meta.vals = sc.objdict(seed=seed, scenario=scenname, future_symp_test=daily_test, future_t_eff=future_t_eff)
+                            ikw.append(sc.dcp(meta.vals))
+                            ikw[-1].meta = meta
+
+            # Actually run the sims
+            kwargs = dict(calibration=False, end_day='2020-10-23')
+            sim_configs = sc.parallelize(make_sim, iterkwargs=ikw, kwargs=kwargs)
+            if do_save:
+                cv.save(filename=sims_file, obj=sim_configs)
+
+        # Run sims
+        all_sims = sc.parallelize(run_sim, iterarg=sim_configs)
+        sims = np.empty((n_scenarios, npts, npts, max_seeds), dtype=object)
+        for sim in all_sims: # Unflatten array
+            i_sc, i_fst, i_fte, i_s = sim.meta.inds
+            sims[i_sc, i_fst, i_fte, i_s] = sim
+
+        # Convert to msims
+        all_sims_semi_flat = []
+        for i_sc in range(n_scenarios):
+            for i_fst in range(npts):
+                for i_fte in range(npts):
+                    sim_seeds = sims[i_sc, i_fst, i_fte, :].tolist()
+                    all_sims_semi_flat.append(sim_seeds)
+        msims = np.empty((n_scenarios, npts, npts), dtype=object)
+        all_msims = sc.parallelize(make_msims, iterarg=all_sims_semi_flat)
+        for msim in all_msims: # Unflatten array
+            i_sc, i_fst, i_fte = msim.meta.inds
+            msims[i_sc, i_fst, i_fte] = msim
+
+        # Do processing and store results
+        for i_sc,scenname in enumerate(scenarios):
             sweep_summary = {'cum_inf':[],'peak_inf':[],'cum_death':[]}
-            for future_symp_test in symp_test_vals:
-                daily_test = np.round(1 - (1 - future_symp_test) ** (1 / 10), 3) if future_symp_test<1 else 0.4
+            for i_fst,future_symp_test in enumerate(symp_test_vals):
                 cum_inf, peak_inf, cum_death = [], [], []
-                for future_t_eff in trace_eff_vals:
-
-                    sc.blank()
-                    print('---------------')
-                    print(f'Scenario: {scenname}, testing: {future_symp_test}, tracing: {future_t_eff}')
-                    print('--------------- ')
-                    sims = []
-
-                    s0 = make_sim(goodseeds[0], beta, calibration=False, scenario=scenname, future_symp_test=daily_test, future_t_eff=future_t_eff, end_day='2020-10-23')
-                    s0.run(until='2020-08-31')
-                    for seed in goodseeds[:10]:
-                        sim = s0.copy()
-                        sim['rand_seed'] = seed
-                        sim.set_seed()
-                        sim.label = f"Sim {seed}"
-                        sims.append(sim)
-
-                    msim = cv.MultiSim(sims)
-                    msim.run(verbose=-1)
-                    msim.reduce()
-
-                    # Store results
+                for i_fte,future_t_eff in enumerate(trace_eff_vals):
+                    msim = msims[i_sc, i_fst, i_fte]
                     data_end_day = msim.sims[0].day(data_end)
-
                     cum_inf.append(msim.results['cum_infections'].values[-1])
                     peak_inf.append(max(msim.results['new_infections'].values[data_end_day:]))
                     cum_death.append(msim.results['cum_deaths'].values[-1])
@@ -365,4 +450,6 @@ if __name__ == '__main__':
                 sweep_summary['peak_inf'].append(peak_inf)
                 sweep_summary['cum_death'].append(cum_death)
 
-            sc.saveobj(f'{resfolder}/uk_tti_sweeps_{scenname}.obj', sweep_summary)
+            cv.save(f'{resfolder}/uk_tti_sweeps_{scenname}.obj', sweep_summary)
+
+
