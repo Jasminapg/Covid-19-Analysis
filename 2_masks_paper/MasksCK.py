@@ -373,9 +373,9 @@ if __name__ == '__main__':
 
         print(f'Note: you may wish to delete the cache folder {cachefolder} before beginning')
 
-        do_load = False # Whether to load files from cache, if available
-        do_save = False # Whether to save files to cache, if rerun
-        npts = 2 #41
+        do_load = True # Whether to load files from cache, if available
+        do_save = True # Whether to save files to cache, if rerun
+        npts = 21 #41
         max_seeds = 2 #10
         symp_test_vals = np.linspace(0, 1, npts)
         trace_eff_vals = np.linspace(0, 1, npts)
