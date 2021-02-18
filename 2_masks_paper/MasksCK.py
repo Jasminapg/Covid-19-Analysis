@@ -375,8 +375,8 @@ if __name__ == '__main__':
 
         do_load = False # Whether to load files from cache, if available
         do_save = False # Whether to save files to cache, if rerun
-        npts = 41
-        max_seeds = 10
+        npts = 2 #41
+        max_seeds = 2 #10
         symp_test_vals = np.linspace(0, 1, npts)
         trace_eff_vals = np.linspace(0, 1, npts)
         scenarios = ['masks30','masks30_notschools','masks15','masks15_notschools']
