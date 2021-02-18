@@ -16,7 +16,7 @@ cv.check_version('2.0.2')
 cv.git_info('covasim_version.json')
 
 # Saving and plotting settings
-debug = 1 # Whether to do a small debug run (for sweeps)
+debug = 0 # Whether to do a small debug run (for sweeps)
 do_plot = 1
 do_save = 1
 save_sim = 1
