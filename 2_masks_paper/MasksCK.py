@@ -489,9 +489,9 @@ if __name__ == '__main__':
                 for i_fte,future_t_eff in enumerate(trace_eff_vals):
                     msim = msims[i_sc, i_fst, i_fte]
                     data_end_day = msim.sims[0].day(data_end)
-                    cum_inf.append(msim.results['cum_infections'].values[-1])
+                    cum_inf.append(msim.results['cum_infections'].values[-1]-msim.results['cum_infections'].values[data_end_day])
                     peak_inf.append(max(msim.results['new_infections'].values[data_end_day:]))
-                    cum_death.append(msim.results['cum_deaths'].values[-1])
+                    cum_death.append(msim.results['cum_deaths'].values[-1]-msim.results['cum_deaths'].values[data_end_day])
 
                 sweep_summary['cum_inf'].append(cum_inf)
                 sweep_summary['peak_inf'].append(peak_inf)

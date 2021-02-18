@@ -90,7 +90,7 @@ for res,label in resnames.iteritems():
                fontsize=36, fontweight='bold', bbox={'edgecolor': 'none', 'facecolor': 'white', 'alpha': 0.5, 'pad': 4})
 
         ax[pn] = pl.axes([xgapl + (dx + xgapm) * (pn % ncols), ygapb + (ygapm + dy) * (pn // ncols), dx, dy])
-        ax[pn] = sns.heatmap(dfs[res][scen], xticklabels=4, yticklabels=4, cmap=sns.cm.rocket_r,
+        ax[pn] = sns.heatmap(dfs[res][scen], xticklabels=8, yticklabels=8, cmap=sns.cm.rocket_r,
                              vmin=0, vmax=cbar_lims[res],
                              cbar=pn==0, cbar_ax=None if pn else cbar_ax,
                              cbar_kws={'label': label})
