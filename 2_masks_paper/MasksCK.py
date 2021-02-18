@@ -375,8 +375,8 @@ if __name__ == '__main__':
 
         do_load = True # Whether to load files from cache, if available
         do_save = True # Whether to save files to cache, if rerun
-        npts = 3 # CHANGE
-        max_seeds = 5 # CHANGE
+        npts = 2 # CHANGE
+        max_seeds = 2 # CHANGE
         symp_test_vals = np.linspace(0, 1, npts)
         trace_eff_vals = np.linspace(0, 1, npts)
         scenarios = ['masks30','masks30_notschools','masks15','masks15_notschools']
@@ -416,7 +416,7 @@ if __name__ == '__main__':
 
         # Run sims
         all_sims = sc.parallelize(run_sim, iterarg=sim_configs)
-        sims = np.empty((n_scenarios, npts, npts, max_seeds))
+        sims = np.empty((n_scenarios, npts, npts, max_seeds), dtype=object)
         for sim in all_sims: # Unflatten array
             i_sc, i_fst, i_fte, i_s = sim.meta.inds
             sims[i_sc, i_fst, i_fte, i_s] = sim
@@ -428,7 +428,7 @@ if __name__ == '__main__':
                 for i_fte in range(npts):
                     sim_seeds = sims[i_sc, i_fst, i_fte, :]
                     all_sims_semi_flat.append(sim_seeds)
-        msims = np.empty((n_scenarios, npts, npts))
+        msims = np.empty((n_scenarios, npts, npts), dtype=object)
         all_msims = sc.parallelize(make_msims, iterarg=all_sims_semi_flat)
         for msim in all_msims: # Unflatten array
             i_sc, i_fst, i_fte = msim.meta.inds
