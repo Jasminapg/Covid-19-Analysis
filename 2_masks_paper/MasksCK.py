@@ -2,6 +2,7 @@
 UK scenarios for evaluating effectivness of masks
 '''
 
+import os
 import sciris as sc
 import covasim as cv
 import numpy as np
@@ -39,6 +40,7 @@ whattorun = runoptions[-1] #Select which of the above to run
 # Filepaths
 data_path = 'UK_Covid_cases_august28.xlsx'
 resfolder = 'results'
+cachefolder = 'cache'
 
 # Important dates
 start_day = '2020-01-21'
@@ -197,6 +199,45 @@ def make_sim(seed=None, calibration=True, scenario=None, future_symp_test=None, 
     return sim
 
 
+def run_sim(sim, do_load=True, do_save=True, do_shrink=True):
+    ''' Run a simulation, loading from cache if possible '''
+
+    print(f'Running sim {meta.inds} ({meta.count} of {meta.n_sims})...')
+
+    sim.run()
+
+    # # Caching -- not yet implemented
+    # seed = sim.meta.vals.seed
+    # cachefile = f'{cachefolder}/cached_sim{seed}.sim'
+    # sim_loaded = False
+    # if do_load and os.path.isfile(cachefile):
+    #     try:
+    #         sim_partial = cv.load(cachefile)
+    #         sim_loaded = True
+    #     except:
+    #         pass
+
+    # if not sim_loaded:
+    #     pass
+    #     if do_save:
+    #         sim.save(cachefile, keep_people=True)
+
+    if do_shrink:
+        sim.shrink()
+
+    return sim
+
+
+def make_msims(sims):
+    ''' Take a slice of sims and turn it into a multisim '''
+    msim = cv.MultiSim(sims)
+    msim.reduce()
+    i_sc, i_fst, i_fte, i_s = sims[0].meta.inds
+    msim.meta = sc.objdict()
+    msim.meta.inds = i_sc, i_fst, i_fte
+    return msim
+
+
 ########################################################################
 # Run calibration and scenarios
 ########################################################################
@@ -242,12 +283,12 @@ if __name__ == '__main__':
         mismatches = np.array([sim.compute_fit().mismatch for sim in msim.sims])
         threshold = np.quantile(mismatches, 0.01) # Take the best 1%
         goodseeds = [i for i in range(len(mismatches)) if mismatches[i] < threshold]
-        sc.saveobj(f'{resfolder}/goodseeds.obj',goodseeds)
+        cv.save(f'{resfolder}/goodseeds.obj',goodseeds)
 
 
     # Run calibration with best-fitting seeds and parameters
     elif whattorun=='finalisefit':
-        goodseeds = sc.loadobj(f'{resfolder}/goodseeds.obj')
+        goodseeds = cv.load(f'{resfolder}/goodseeds.obj')
         s0 = make_sim(seed=1, end_day='2020-08-25', verbose=-1)
         sims = []
         for seed in goodseeds:
@@ -270,7 +311,7 @@ if __name__ == '__main__':
     # Run scenarios with best-fitting seeds and parameters
     elif whattorun=='scens':
 
-        goodseeds = sc.loadobj(f'{resfolder}/goodseeds.obj')
+        goodseeds = cv.load(f'{resfolder}/goodseeds.obj')
 
         # Define scenario to run
         scenarios = sc.odict({
@@ -323,77 +364,81 @@ if __name__ == '__main__':
     # Run scenarios with best-fitting seeds and parameters
     elif whattorun=='tti_sweeps':
 
+        do_load = True # Whether to load files from cache, if available
+        do_save = True # Whether to save files to cache, if rerun
         npts = 41
         max_seeds = 10
         symp_test_vals = np.linspace(0, 1, npts)
         trace_eff_vals = np.linspace(0, 1, npts)
         scenarios = ['masks30','masks30_notschools','masks15','masks15_notschools']
         n_scenarios = len(scenarios)
-        goodseeds = sc.loadobj(f'{resfolder}/goodseeds.obj')[:max_seeds]
+        goodseeds = cv.load(f'{resfolder}/goodseeds.obj')[:max_seeds]
+
+        sims_file = f'{cachefolder}/all_sims.obj'
 
         # Make sims
-        sims = np.empty((n_scenarios, npts, npts, max_seeds), dtype=object)
-        n_sims = sims.size
-        count = 0
-        # ikw = sc.objdict().make(keys=['seed', 'scenname', 'future_symp_test', 'future_t_eff', 'meta'], vals=[])
-        ikw = []
-        for i_sc,scenname in enumerate(scenarios):
-            for i_fst,future_symp_test in enumerate(symp_test_vals):
-                print(f'Creating arguments for sim {count} of {n_sims}...')
-                daily_test = np.round(1 - (1 - future_symp_test) ** (1 / 10), 3) if future_symp_test<1 else 0.4
-                for i_fte,future_t_eff in enumerate(trace_eff_vals):
-                    for i_s,seed in enumerate(goodseeds):
-                        count += 1
-                        meta = sc.objdict()
-                        meta.count = count
-                        meta.n_sims = n_sims
-                        meta.inds = [i_sc, i_fst, i_fte, i_s]
-                        meta.vals = sc.objdict(seed=seed, scenario=scenname, future_symp_test=daily_test, future_t_eff=future_t_eff)
-                        ikw.append(sc.dcp(meta.vals))
-                        ikw[-1].meta = meta
-                        # ikw.seed.append(seed)
-                        # ikw.scenario.append(scenname)
-                        # ikw.future_symp_test.append(daily_test)
-                        # ikw.future_t_eff.append(future_t_eff)
-                        # ikw.meta.append(meta)
+        sc.heading('Making sims...')
+        if os.path.isfile(sims_file) and do_load: # Don't run, just load
+            sim_configs = cv.load(sims_file)
+        else:
+            n_sims = n_scenarios*npts**2*max_seeds
+            count = 0
+            ikw = []
+            for i_sc,scenname in enumerate(scenarios):
+                for i_fst,future_symp_test in enumerate(symp_test_vals):
+                    print(f'Creating arguments for sim {count} of {n_sims}...')
+                    daily_test = np.round(1 - (1 - future_symp_test) ** (1 / 10), 3) if future_symp_test<1 else 0.4
+                    for i_fte,future_t_eff in enumerate(trace_eff_vals):
+                        for i_s,seed in enumerate(goodseeds):
+                            count += 1
+                            meta = sc.objdict()
+                            meta.count = count
+                            meta.n_sims = n_sims
+                            meta.inds = [i_sc, i_fst, i_fte, i_s]
+                            meta.vals = sc.objdict(seed=seed, scenario=scenname, future_symp_test=daily_test, future_t_eff=future_t_eff)
+                            ikw.append(sc.dcp(meta.vals))
+                            ikw[-1].meta = meta
 
-        kwargs = dict(calibration=False, end_day='2020-10-23')
-        all_sims = sc.parallelize(make_sim, iterkwargs=ikw, kwargs=kwargs)
-        for sim in all_sims: # Flatten array
+            # Actually run the sims
+            kwargs = dict(calibration=False, end_day='2020-10-23')
+            sim_configs = sc.parallelize(make_sim, iterkwargs=ikw, kwargs=kwargs)
+            if do_save:
+                cv.save(filename=sims_file, obj=sim_configs)
+
+        # Run sims
+        all_sims = sc.parallelize(run_sim, iterarg=sim_configs)
+        sims = np.empty((n_scenarios, npts, npts, max_seeds))
+        for sim in all_sims: # Unflatten array
             i_sc, i_fst, i_fte, i_s = sim.meta.inds
             sims[i_sc, i_fst, i_fte, i_s] = sim
 
-        #             sc.blank()
-        #             print('---------------')
-        #             print(f'Scenario: {scenname}, testing: {future_symp_test}, tracing: {future_t_eff}')
-        #             print('--------------- ')
-        #             sims = []
+        # Convert to msims
+        all_sims_semi_flat = []
+        for i_sc in range(n_scenarios):
+            for i_fst in range(npts):
+                for i_fte in range(npts):
+                    sim_seeds = sims[i_sc, i_fst, i_fte, :]
+                    all_sims_semi_flat.append(sim_seeds)
+        msims = np.empty((n_scenarios, npts, npts))
+        all_msims = sc.parallelize(make_msims, iterarg=all_sims_semi_flat)
+        for msim in all_msims: # Unflatten array
+            i_sc, i_fst, i_fte = msim.meta.inds
+            msims[i_sc, i_fst, i_fte] = msim
 
-        #             s0.run(until='2020-08-31')
-        #             for seed in goodseeds:
-        #                 sim = s0.copy()
-        #                 sim['rand_seed'] = seed
-        #                 sim.set_seed()
-        #                 sim.label = f"Sim {seed}"
-        #                 sims.append(sim)
+        # Do processing and store results
+        for i_sc,scenname in enumerate(scenarios):
+            sweep_summary = {'cum_inf':[],'peak_inf':[],'cum_death':[]}
+            for i_fst,future_symp_test in enumerate(symp_test_vals):
+                cum_inf, peak_inf, cum_death = [], [], []
+                for i_fte,future_t_eff in enumerate(trace_eff_vals):
+                    msim = msims[i_sc, i_fst, i_fte]
+                    data_end_day = msim.sims[0].day(data_end)
+                    cum_inf.append(msim.results['cum_infections'].values[-1])
+                    peak_inf.append(max(msim.results['new_infections'].values[data_end_day:]))
+                    cum_death.append(msim.results['cum_deaths'].values[-1])
 
-        #             msim = cv.MultiSim(sims)
-        #             msim.run(verbose=-1)
-        #             msim.reduce()
+                sweep_summary['cum_inf'].append(cum_inf)
+                sweep_summary['peak_inf'].append(peak_inf)
+                sweep_summary['cum_death'].append(cum_death)
 
-        # # Do processing and store results
-        # for i_sc,scenname in enumerate(scenarios):
-        #     sweep_summary = {'cum_inf':[],'peak_inf':[],'cum_death':[]}
-        #     for i_fst,future_symp_test in enumerate(symp_test_vals):
-        #         cum_inf, peak_inf, cum_death = [], [], []
-        #         for i_fte,future_t_eff in enumerate(trace_eff_vals):
-        #             data_end_day = msim.sims[0].day(data_end)
-        #             cum_inf.append(msim.results['cum_infections'].values[-1])
-        #             peak_inf.append(max(msim.results['new_infections'].values[data_end_day:]))
-        #             cum_death.append(msim.results['cum_deaths'].values[-1])
-
-        #         sweep_summary['cum_inf'].append(cum_inf)
-        #         sweep_summary['peak_inf'].append(peak_inf)
-        #         sweep_summary['cum_death'].append(cum_death)
-
-        #     sc.saveobj(f'{resfolder}/uk_tti_sweeps_{scenname}.obj', sweep_summary)
+            cv.save(f'{resfolder}/uk_tti_sweeps_{scenname}.obj', sweep_summary)
