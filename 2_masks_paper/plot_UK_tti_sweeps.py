@@ -99,7 +99,7 @@ for res,label in resnames.iteritems():
                              cbar=pn==0, cbar_ax=None if pn else cbar_ax,
                              cbar_kws={'label': label})
 
-        # use pylab and imshow's interpolation
+        # use pylab and imshow's interpolation -- not suggested
         # im = ax[pn].imshow(dfs[res][scen], cmap=sns.cm.rocket_r,
         #               norm=Normalize(vmin=0, vmax=cbar_lims[res]),
         #               label=label,
