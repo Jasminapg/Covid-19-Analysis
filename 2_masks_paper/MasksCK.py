@@ -3,6 +3,7 @@ UK scenarios for evaluating effectivness of masks
 '''
 
 import os
+import shutil
 import sciris as sc
 import covasim as cv
 import numpy as np
@@ -15,6 +16,7 @@ cv.check_version('2.0.2')
 cv.git_info('covasim_version.json')
 
 # Saving and plotting settings
+debug = 1 # Whether to do a small debug run (for sweeps)
 do_plot = 1
 do_save = 1
 save_sim = 1
@@ -60,7 +62,7 @@ def make_sim(seed=None, calibration=True, scenario=None, future_symp_test=None, 
     # Set the parameters
     beta         = 0.00748 # Calibrated value
     total_pop    = 67.86e6 # UK population size
-    pop_size     = 100e3 # Actual simulated population
+    pop_size     = [100e3, 5e3][debug] # Actual simulated population
     pop_scale    = int(total_pop/pop_size)
     pop_type     = 'hybrid'
     pop_infected = 1500
@@ -200,37 +202,74 @@ def make_sim(seed=None, calibration=True, scenario=None, future_symp_test=None, 
     return sim
 
 
-def run_sim(sim, do_load=False, do_save=True, do_shrink=True):
-    ''' Run a simulation, loading from cache if possible '''
+def try_loading_cached_sim(sim, cachefile, statusfile, do_load):
+    ''' Load the sim from file, or at least try '''
 
-    print(f'Running sim {sim.meta.inds} ({sim.meta.count} of {sim.meta.n_sims})...')
+    # Assign these to variables to prevent accidental changes!
+    success = 'success'
+    failed = 'failed'
 
-    # Caching -- WARNING, needs testing!
-    seed = sim.meta.vals.seed
-    cachefile = f'{cachefolder}/cached_sim{seed}.sim'
+    if os.path.isfile(statusfile):
+        status = sc.loadtext(statusfile)
+    else:
+        status = 'not yet run'
+
     sim_loaded = False
-    if do_load and os.path.isfile(cachefile):
+    if do_load and os.path.isfile(cachefile) and failed not in status:
         try:
             sim_orig = sim.copy()
-            sim = cv.load(cachefile)
+            sim = cv.Sim.load(cachefile)
             sim.meta = sim_orig.meta
             sim['interventions'] = sim_orig['interventions']
             for interv in sim['interventions']:
                 interv.initialize(sim)
+            if status != success: # Update the status to note success
+                sc.savetext(statusfile, success)
             sim_loaded = True
         except Exception as E:
-            print(f'WARNING, failed to load cached sim from {cachefile}! Reason: {str(E)}')
-    if not sim_loaded:
-        sim.run(until=day_before_scens)
-        if do_save and not os.path.isfile(cachefile):
-            print(f'Saving cache file to {cachefile}')
-            sim.save(cachefile, keep_people=True)
+            errormsg = f'WARNING, {failed} to load cached sim from {cachefile}! Reason: {str(E)}'
+            print(errormsg)
+            sc.savetext(statusfile, errormsg)
 
-    # Actually run the sim
+    return sim, sim_loaded
+
+
+def save_cached_sim(sim, cachefile, statusfile, do_save):
+    ''' Save the sim to disk '''
+
+    if do_save:
+        print(f'Saving cache file to {cachefile}')
+        sim.save(cachefile, keep_people=True)
+        sc.savetext(statusfile, 'saved but not yet loaded')
+
+    return
+
+
+def run_sim(sim, do_load=True, do_save=True, do_shrink=True):
+    ''' Run a simulation, loading from cache if possible '''
+
+    # Caching -- WARNING, needs testing!
+    seed = sim.meta.vals.seed
+    id_str = '_'.join([str(i) for i in sim.meta.inds])
+    cachefile = f'{cachefolder}/cached_sim{seed}.sim' # File to save the partially run sim to
+    simfile = f'{cachefolder}/final_sim{id_str}.sim' # File to save the partially run sim to
+    statusfile = f'{cachefolder}/status{seed}.tmp'
+    sim, sim_loaded = try_loading_cached_sim(sim, cachefile, statusfile, do_load)
+    loadstr = 'loaded from cache :)' if sim_loaded else 'could not load from cache'
+
+    print(f'Running sim {sim.meta.count:5g} of {sim.meta.n_sims:5g} {str(sim.meta.vals.values()):40s} -- {loadstr}')
+    if not sim_loaded:
+        sim.run(until=day_before_scens) # If not loaded, run the partial sim
+        save_cached_sim(sim, cachefile, statusfile, do_save) # Save (optionally)
+
+    # Actually run the (rest of the) sim
     sim.run()
 
     if do_shrink:
         sim.shrink()
+
+    if save_sim: # NB, generates ~2 GB of files for a full run
+        sim.save(simfile)
 
     return sim
 
@@ -371,19 +410,27 @@ if __name__ == '__main__':
     # Run scenarios with best-fitting seeds and parameters
     elif whattorun=='tti_sweeps':
 
-        print(f'Note: you may wish to delete the cache folder {cachefolder} before beginning')
-
-        do_load = False # Whether to load files from cache, if available
-        do_save = False  # Whether to save files to cache, if rerun
-        npts = 41
-        max_seeds = 10
+        do_load = True # Whether to load files from cache, if available
+        do_save = True  # Whether to save files to cache, if rerun
+        npts = [41, 3][debug]
+        max_seeds = [10, 4][debug]
         symp_test_vals = np.linspace(0, 1, npts)
         trace_eff_vals = np.linspace(0, 1, npts)
         scenarios = ['masks30','masks30_notschools','masks15','masks15_notschools']
         n_scenarios = len(scenarios)
         goodseeds = cv.load(f'{resfolder}/goodseeds.obj')[:max_seeds]
-
         sims_file = f'{cachefolder}/all_sims.obj'
+        T = sc.tic()
+
+        # Optionally remove the cache folder
+        if do_load and os.path.exists(cachefolder):
+            response = input(f'Do you want to delete the cache folder "{os.path.abspath(cachefolder)}" before starting? y/[n] ')
+            if response in ['y', 'yes', 'Yes']:
+                print(f'Deleting "{cachefolder}"...')
+                shutil.rmtree(cachefolder)
+            else:
+                print(f'OK, not deleting "{cachefolder}" -- you were warned!')
+            sc.timedsleep(2) # Wait for a moment so messages can be seen
 
         # Make sims
         sc.heading('Making sims...')
@@ -415,7 +462,7 @@ if __name__ == '__main__':
                 cv.save(filename=sims_file, obj=sim_configs)
 
         # Run sims
-        all_sims = sc.parallelize(run_sim, iterarg=sim_configs)
+        all_sims = sc.parallelize(run_sim, iterarg=sim_configs, kwargs=dict(do_load=do_load, do_save=do_save))
         sims = np.empty((n_scenarios, npts, npts, max_seeds), dtype=object)
         for sim in all_sims: # Unflatten array
             i_sc, i_fst, i_fte, i_s = sim.meta.inds
@@ -450,6 +497,8 @@ if __name__ == '__main__':
                 sweep_summary['peak_inf'].append(peak_inf)
                 sweep_summary['cum_death'].append(cum_death)
 
-            cv.save(f'{resfolder}/uk_tti_sweeps_{scenname}.obj', sweep_summary)
+            if not debug:
+                cv.save(f'{resfolder}/uk_tti_sweeps_{scenname}.obj', sweep_summary)
+        sc.toc(T)
 
 
