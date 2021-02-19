@@ -528,5 +528,5 @@ if __name__ == '__main__':
                 sweep_summary['peak_inf'].append(peak_inf)
                 sweep_summary['cum_death'].append(cum_death)
 
-            cv.save(f'{resfolder}/uk_tti_sweeps_{scenname}_mean.obj', sweep_summary)
+            cv.save(f'{resfolder}_mean/uk_tti_sweeps_{scenname}.obj', sweep_summary)
 
