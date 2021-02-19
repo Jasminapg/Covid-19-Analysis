@@ -2,12 +2,18 @@ import covasim as cv
 import pandas as pd
 import sciris as sc
 import pylab as pl
+import numpy as np
+from matplotlib import ticker
+import datetime as dt
+import matplotlib.patches as patches
+import matplotlib.pyplot as plt
+from matplotlib.collections import LineCollection
 import seaborn as sns
-
+import matplotlib.ticker as mtick
 
 # Paths and filenames
-figsfolder = 'figs'
-resfolder = 'results'
+figsfolder = 'figs_mean'
+resfolder = 'results_mean'
 scenarios = ['masks30_notschools', 'masks30', 'masks15_notschools', 'masks15']
 resnames = sc.odict({'cum_inf': 'Cumulative infections (millions)',
                      'peak_inf': 'Peak infections (thousands)',
@@ -16,7 +22,6 @@ resnames = sc.odict({'cum_inf': 'Cumulative infections (millions)',
 T = sc.tic()
 
 # Define plotting functions
-do_save = False
 
 # Fonts and sizes
 font_size = 36
@@ -45,10 +50,6 @@ for scen in scenarios:
     filepath = f'{resfolder}/uk_tti_sweeps_{scen}.obj'
     sweep_summaries[scen] = sc.loadobj(filepath)
 
-#msim = sc.loadobj(f'{resfolder}/uk_sim.obj')
-#msim.reduce()
-#inf_til_aug = msim.results['cum_infections'].values[-1]
-#death_til_aug = msim.results['cum_deaths'].values[-1]
 
 # Translate them into a dict of dataframes
 dfs = sc.odict()
@@ -59,10 +60,8 @@ for res in resnames.keys():
         dfs[res][scen] = pd.DataFrame(sweep_summaries[scen][res])
         if res=='cum_inf':
             dfs[res][scen] = (dfs[res][scen]) / 1e6
-#            dfs[res][scen] = (dfs[res][scen]-inf_til_aug) / 1e6
         elif res=='cum_death':
             dfs[res][scen] = (dfs[res][scen]) / 1e3
-#            dfs[res][scen] = (dfs[res][scen] - death_til_aug) / 1e3
         else:
             dfs[res][scen] /= 1e3
     cbar_lims[res] = max(dfs[res]['masks15_notschools'].max())
@@ -98,14 +97,23 @@ for res,label in resnames.iteritems():
             ax[pn].set_yticklabels([])
         else:
             ax[pn].set_ylabel('Symptomatic testing')
-            # ax[pn].set_yticklabels([f'{int(i*100)}%' for i in np.linspace(0,1,6)], rotation=0)
+            ax[pn].set_yticklabels([f'{int(i*100)}%' for i in np.linspace(0,1,6)], rotation=0)
         if pn not in range(ncols):
             ax[pn].set_xticklabels([])
         else:
             ax[pn].set_xlabel('% of contacts traced')
-            # ax[pn].set_xticklabels([f'{int(i * 100)}%' for i in np.linspace(0, 1, 6)])
+            ax[pn].set_xticklabels([f'{int(i * 100)}%' for i in np.linspace(0, 1, 6)])
 
-    if do_save:
-        cv.savefig(f'{figsfolder}/fig_sweeps_{res}.png', dpi=100)
+    cv.savefig(f'{figsfolder}/fig_sweeps_{res}.png', dpi=100)
 
 sc.toc(T)
+
+# Calculate stats
+inf_stats = sc.odict()
+for reskey in ['cum_inf', 'peak_inf']:
+    inf_stats[reskey] = sc.odict()
+    for scen in scenarios:
+        inf_stats[reskey][scen] = sc.odict()
+        inf_stats[reskey][scen]['max'] = max(dfs[reskey][scen].max())
+    inf_stats[reskey]['mask_effect_30'] = ((dfs[reskey]['masks30_notschools']-dfs[reskey]['masks30']).mean()).mean()
+    inf_stats[reskey]['mask_effect_15'] = ((dfs[reskey]['masks15_notschools']-dfs[reskey]['masks15']).mean()).mean()
