@@ -36,7 +36,8 @@ runoptions = ['quickfit', # Does a quick preliminary calibration. Quick to run, 
               'finalisefit', # Processes the results of the previous step to produce a calibration with the best seeds
               'scens', # Takes the best-fitting runs and projects these forward under different mask and TTI assumptions
               'tti_sweeps', # Sweeps over future testing/tracing values to create data for heatmaps
-              'mean_calcs'
+              'mean_calcs',
+              'test_msim'
               ]
 whattorun = runoptions[-1] #Select which of the above to run
 
@@ -58,7 +59,7 @@ day_before_scens = '2020-08-31'
 
 def make_sim(seed=None, calibration=True, scenario=None, future_symp_test=None, future_t_eff=None, end_day=None, verbose=0, meta=None):
 
-    print(f'Making sim {meta.inds} ({meta.count} of {meta.n_sims})...')
+#    print(f'Making sim {meta.inds} ({meta.count} of {meta.n_sims})...')
 
     # Set the parameters
     beta         = 0.00748 # Calibrated value
@@ -198,7 +199,7 @@ def make_sim(seed=None, calibration=True, scenario=None, future_symp_test=None, 
         intervention.do_plot = False
 
     # Store metadata
-    sim.meta = meta
+#    sim.meta = meta
 
     return sim
 
@@ -530,3 +531,28 @@ if __name__ == '__main__':
 
             cv.save(f'{resfolder}_mean/uk_tti_sweeps_{scenname}.obj', sweep_summary)
 
+    elif whattorun=='test_msim':
+        i_msim = [1, 36, 2]
+        npts = 41
+        max_seeds = 10
+        symp_test_vals = np.linspace(0, 1, npts)[i_msim[1]]
+        trace_eff_vals = np.linspace(0, 1, npts)[i_msim[2]]
+        scenarios = ['masks30','masks30_notschools','masks15','masks15_notschools'][i_msim[0]]
+        n_scenarios = len(scenarios)
+        goodseeds = cv.load(f'{resfolder}/goodseeds.obj')[:max_seeds]
+
+        s0 = make_sim(seed=1, calibration=False, scenario=scenarios, future_symp_test=symp_test_vals, future_t_eff=trace_eff_vals, end_day='2020-10-23', verbose=0.1)
+        sims = []
+        for seed in goodseeds:
+            sim = s0.copy()
+            sim['rand_seed'] = seed
+            sim.set_seed()
+            sim.label = f"Sim {seed}"
+            sims.append(sim)
+
+        msim = cv.MultiSim(sims)
+        msim.run()
+        msim.reduce()
+
+        data_end_day = msim.sims[0].day('2020-08-28')
+        check_res = msim.results['cum_infections'].values[-1] - msim.results['cum_infections'].values[data_end_day]

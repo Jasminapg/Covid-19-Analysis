@@ -12,8 +12,8 @@ import seaborn as sns
 import matplotlib.ticker as mtick
 
 # Paths and filenames
-figsfolder = 'figs_mean'
-resfolder = 'results_mean'
+figsfolder = 'figs'
+resfolder = 'results/no_cachefeb19'
 scenarios = ['masks30_notschools', 'masks30', 'masks15_notschools', 'masks15']
 resnames = sc.odict({'cum_inf': 'Cumulative infections (millions)',
                      'peak_inf': 'Peak infections (thousands)',
