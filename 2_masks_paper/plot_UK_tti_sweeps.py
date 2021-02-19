@@ -50,10 +50,6 @@ for scen in scenarios:
     filepath = f'{resfolder}/uk_tti_sweeps_{scen}.obj'
     sweep_summaries[scen] = sc.loadobj(filepath)
 
-#msim = sc.loadobj(f'{resfolder}/uk_sim.obj')
-#msim.reduce()
-#inf_til_aug = msim.results['cum_infections'].values[-1]
-#death_til_aug = msim.results['cum_deaths'].values[-1]
 
 # Translate them into a dict of dataframes
 dfs = sc.odict()
@@ -64,10 +60,8 @@ for res in resnames.keys():
         dfs[res][scen] = pd.DataFrame(sweep_summaries[scen][res])
         if res=='cum_inf':
             dfs[res][scen] = (dfs[res][scen]) / 1e6
-#            dfs[res][scen] = (dfs[res][scen]-inf_til_aug) / 1e6
         elif res=='cum_death':
             dfs[res][scen] = (dfs[res][scen]) / 1e3
-#            dfs[res][scen] = (dfs[res][scen] - death_til_aug) / 1e3
         else:
             dfs[res][scen] /= 1e3
     cbar_lims[res] = max(dfs[res]['masks15_notschools'].max())
