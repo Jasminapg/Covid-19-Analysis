@@ -17,6 +17,7 @@ cv.git_info('covasim_version.json')
 
 # Saving and plotting settings
 debug = 1 # Whether to do a small debug run (for sweeps)
+use_mean = 1 # Whether to use the mean instead of median
 do_plot = 1
 do_save = 1
 save_sim = 1
@@ -84,7 +85,7 @@ def make_sim(seed=None, calibration=True, scenario=None, future_symp_test=None, 
         asymp_factor = asymp_factor,
         contacts     = contacts,
         rescale      = True,
-        rand_seed    = seed,# + np.prod(meta.inds) + np.sum(meta.inds), # TEMP
+        rand_seed    = seed,
         verbose      = verbose,
         #rel_severe_prob = 0.4,
         #rel_crit_prob = 2.3,
@@ -276,7 +277,7 @@ def run_sim(sim, do_load=True, do_save=True, do_shrink=True):
 def make_msims(sims):
     ''' Take a slice of sims and turn it into a multisim '''
     msim = cv.MultiSim(sims)
-    msim.reduce()
+    msim.reduce(use_mean=use_mean)
     i_sc, i_fst, i_fte, i_s = sims[0].meta.inds
     for s,sim in enumerate(sims): # Check that everything except seed matches
         assert i_sc == sim.meta.inds[0]
@@ -511,8 +512,7 @@ if __name__ == '__main__':
                 sweep_summary['peak_inf'].append(peak_inf)
                 sweep_summary['cum_death'].append(cum_death)
 
-            if 1:#not debug:
-                cv.save(f'{resfolder}/uk_tti_sweeps_{scenname}.obj', sweep_summary)
+            cv.save(f'{resfolder}/uk_tti_sweeps_{scenname}.obj', sweep_summary)
         sc.toc(T)
 
 
