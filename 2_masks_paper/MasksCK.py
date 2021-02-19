@@ -16,7 +16,7 @@ cv.check_version('2.0.2')
 cv.git_info('covasim_version.json')
 
 # Saving and plotting settings
-debug = 1 # Whether to do a small debug run (for sweeps)
+debug = 0 # Whether to do a small debug run (for sweeps)
 do_load_cache = 0 # Whether to load files from cache, if available
 do_save_cache = 0 # Whether to save files to cache, if rerun
 parallel = 1 # Whether to run in parallel
@@ -436,8 +436,8 @@ if __name__ == '__main__':
     # Run scenarios with best-fitting seeds and parameters
     elif whattorun=='tti_sweeps':
 
-        sy_npts = [41, 5][debug]
-        tr_npts = [41, 5][debug]
+        sy_npts = [51, 5][debug]
+        tr_npts = [51, 5][debug]
         max_seeds = [10, 4][debug]
         symp_test_vals = np.linspace(0, 1, sy_npts)
         trace_eff_vals = np.linspace(0, 1, tr_npts)
