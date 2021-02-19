@@ -411,8 +411,8 @@ if __name__ == '__main__':
     # Run scenarios with best-fitting seeds and parameters
     elif whattorun=='tti_sweeps':
 
-        do_load = True # Whether to load files from cache, if available
-        do_save = True  # Whether to save files to cache, if rerun
+        do_load = False # Whether to load files from cache, if available
+        do_save = False # Whether to save files to cache, if rerun
         npts = [41, 3][debug]
         max_seeds = [10, 4][debug]
         symp_test_vals = np.linspace(0, 1, npts)
