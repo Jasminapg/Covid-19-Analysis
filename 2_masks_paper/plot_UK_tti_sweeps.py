@@ -12,8 +12,8 @@ import seaborn as sns
 import matplotlib.ticker as mtick
 
 # Paths and filenames
-figsfolder = 'figs'
-resfolder = 'results/no_cachefeb19'
+figsfolder = 'figs_mean'
+resfolder = 'results_mean'
 scenarios = ['masks30_notschools', 'masks30', 'masks15_notschools', 'masks15']
 resnames = sc.odict({'cum_inf': 'Cumulative infections (millions)',
                      'peak_inf': 'Peak infections (thousands)',
@@ -113,3 +113,13 @@ for res,label in resnames.iteritems():
     cv.savefig(f'{figsfolder}/fig_sweeps_{res}.png', dpi=100)
 
 sc.toc(T)
+
+# Calculate stats
+inf_stats = sc.odict()
+for reskey in ['cum_inf', 'peak_inf']:
+    inf_stats[reskey] = sc.odict()
+    for scen in scenarios:
+        inf_stats[reskey][scen] = sc.odict()
+        inf_stats[reskey][scen]['max'] = max(dfs[reskey][scen].max())
+    inf_stats[reskey]['mask_effect_30'] = ((dfs[reskey]['masks30_notschools']-dfs[reskey]['masks30']).mean()).mean()
+    inf_stats[reskey]['mask_effect_15'] = ((dfs[reskey]['masks15_notschools']-dfs[reskey]['masks15']).mean()).mean()
