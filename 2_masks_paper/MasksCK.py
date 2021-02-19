@@ -17,6 +17,9 @@ cv.git_info('covasim_version.json')
 
 # Saving and plotting settings
 debug = 1 # Whether to do a small debug run (for sweeps)
+do_load_cache = 0 # Whether to load files from cache, if available
+do_save_cache = 0 # Whether to save files to cache, if rerun
+parallel = 1 # Whether to run in parallel
 use_mean = 1 # Whether to use the mean instead of median
 do_plot = 1
 do_save = 1
@@ -204,7 +207,7 @@ def make_sim(seed=None, calibration=True, scenario=None, future_symp_test=None, 
     return sim
 
 
-def try_loading_cached_sim(sim, cachefile, statusfile, do_load):
+def try_loading_cached_sim(sim, cachefile, statusfile, do_load_cache):
     ''' Load the sim from file, or at least try '''
 
     # Assign these to variables to prevent accidental changes!
@@ -217,33 +220,42 @@ def try_loading_cached_sim(sim, cachefile, statusfile, do_load):
         status = 'not yet run'
 
     sim_loaded = False
-    if do_load and os.path.isfile(cachefile) and failed not in status:
+    if do_load_cache and os.path.isfile(cachefile) and failed not in status:
         try:
             sim_orig = sim.copy()
             sim = cv.Sim.load(cachefile)
             sim.meta = sim_orig.meta
-            sim['interventions'] = sim_orig['interventions']
-            for interv in sim['interventions']:
-                interv.initialize(sim)
+            sim.pars = sc.dcp(sim_orig.pars)
+
+            # Partially reinitialize the sim
+            sim.validate_pars() # Number of days is wrong otherwise
+            sim.set_seed()
+            sim.init_interventions()
+            sim.set_seed() # Reset the random seed again so the random number stream is consistent
+            sim.initialized   = True
+            sim.complete      = False
+            sim.results_ready = False
+
             if status != success: # Update the status to note success
                 sc.savetext(statusfile, success)
             sim_loaded = True
+
         except Exception as E:
             errormsg = f'WARNING, {failed} to load cached sim from {cachefile}! Reason: {str(E)}'
             print(errormsg)
             sc.savetext(statusfile, errormsg)
 
     if sim_loaded:    loadstr = 'loaded from cache :)'
-    elif not do_load: loadstr = 'loading from cache disabled'
+    elif not do_load_cache: loadstr = 'loading from cache disabled'
     else:             loadstr = 'could not load from cache'
 
     return sim, sim_loaded, loadstr
 
 
-def save_cached_sim(sim, cachefile, statusfile, do_save):
+def save_cached_sim(sim, cachefile, statusfile, do_save_cache):
     ''' Save the sim to disk '''
 
-    if do_save:
+    if do_save_cache:
         print(f'Saving cache file to {cachefile}')
         sim.save(cachefile, keep_people=True)
         sc.savetext(statusfile, 'saved but not yet loaded')
@@ -251,19 +263,19 @@ def save_cached_sim(sim, cachefile, statusfile, do_save):
     return
 
 
-def run_sim(sim, do_load=True, do_save=True, do_shrink=True):
+def run_sim(sim, do_load_cache=True, do_save_cache=True, do_shrink=True):
     ''' Run a simulation, loading from cache if possible '''
 
     # Caching -- WARNING, needs testing!
     seed = sim.meta.vals.seed
     cachefile = f'{cachefolder}/cached_sim{seed}.sim' # File to save the partially run sim to
     statusfile = f'{cachefolder}/status{seed}.tmp'
-    sim, sim_loaded, loadstr = try_loading_cached_sim(sim, cachefile, statusfile, do_load)
+    sim, sim_loaded, loadstr = try_loading_cached_sim(sim, cachefile, statusfile, do_load_cache)
 
     print(f'Running sim {sim.meta.count:5g} of {sim.meta.n_sims:5g} {str(sim.meta.vals.values()):40s} -- {loadstr}')
     if not sim_loaded:
         sim.run(until=day_before_scens) # If not loaded, run the partial sim
-        save_cached_sim(sim, cachefile, statusfile, do_save) # Save (optionally)
+        save_cached_sim(sim, cachefile, statusfile, do_save_cache) # Save (optionally)
 
     # Actually run the (rest of the) sim
     sim.run()
@@ -424,8 +436,6 @@ if __name__ == '__main__':
     # Run scenarios with best-fitting seeds and parameters
     elif whattorun=='tti_sweeps':
 
-        do_load = False # Whether to load files from cache, if available
-        do_save = False # Whether to save files to cache, if rerun
         sy_npts = [41, 5][debug]
         tr_npts = [41, 5][debug]
         max_seeds = [10, 4][debug]
@@ -438,7 +448,7 @@ if __name__ == '__main__':
         T = sc.tic()
 
         # Optionally remove the cache folder
-        if do_load and os.path.exists(cachefolder):
+        if do_load_cache and os.path.exists(cachefolder):
             response = input(f'Do you want to delete the cache folder "{os.path.abspath(cachefolder)}" before starting? y/[n] ')
             if response in ['y', 'yes', 'Yes']:
                 print(f'Deleting "{cachefolder}"...')
@@ -449,7 +459,7 @@ if __name__ == '__main__':
 
         # Make sims
         sc.heading('Making sims...')
-        if os.path.isfile(sims_file) and do_load: # Don't run, just load
+        if os.path.isfile(sims_file) and do_load_cache: # Don't run, just load
             sim_configs = cv.load(sims_file)
         else:
             n_sims = n_scenarios*sy_npts*tr_npts*max_seeds
@@ -473,11 +483,18 @@ if __name__ == '__main__':
             # Actually run the sims
             kwargs = dict(calibration=False, end_day='2020-10-23')
             sim_configs = sc.parallelize(make_sim, iterkwargs=ikw, kwargs=kwargs)
-            if do_save:
+            if do_save_cache:
                 cv.save(filename=sims_file, obj=sim_configs)
 
         # Run sims
-        all_sims = sc.parallelize(run_sim, iterarg=sim_configs, kwargs=dict(do_load=do_load, do_save=do_save))
+        kwargs = dict(do_load_cache=do_load_cache, do_save_cache=do_save_cache)
+        if parallel:
+            all_sims = sc.parallelize(run_sim, iterarg=sim_configs, kwargs=kwargs)
+        else:
+            all_sims = []
+            for sim_config in sim_configs:
+                sim = run_sim(sim=sim_config, **kwargs)
+                all_sims.append(sim)
         sims = np.empty((n_scenarios, sy_npts, tr_npts, max_seeds), dtype=object)
         for sim in all_sims: # Unflatten array
             i_sc, i_fst, i_fte, i_s = sim.meta.inds

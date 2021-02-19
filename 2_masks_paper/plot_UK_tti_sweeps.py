@@ -13,7 +13,7 @@ import matplotlib.ticker as mtick
 
 # Paths and filenames
 figsfolder = 'figs_mean'
-resfolder = 'results_mean'
+resfolder = 'results'
 scenarios = ['masks30_notschools', 'masks30', 'masks15_notschools', 'masks15']
 resnames = sc.odict({'cum_inf': 'Cumulative infections (millions)',
                      'peak_inf': 'Peak infections (thousands)',
@@ -97,12 +97,12 @@ for res,label in resnames.iteritems():
             ax[pn].set_yticklabels([])
         else:
             ax[pn].set_ylabel('Symptomatic testing')
-            ax[pn].set_yticklabels([f'{int(i*100)}%' for i in np.linspace(0,1,6)], rotation=0)
+            # ax[pn].set_yticklabels([f'{int(i*100)}%' for i in np.linspace(0,1,6)], rotation=0)
         if pn not in range(ncols):
             ax[pn].set_xticklabels([])
         else:
             ax[pn].set_xlabel('% of contacts traced')
-            ax[pn].set_xticklabels([f'{int(i * 100)}%' for i in np.linspace(0, 1, 6)])
+            # ax[pn].set_xticklabels([f'{int(i * 100)}%' for i in np.linspace(0, 1, 6)])
 
     cv.savefig(f'{figsfolder}/fig_sweeps_{res}.png', dpi=100)
 
