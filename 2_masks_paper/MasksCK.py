@@ -66,7 +66,7 @@ def make_sim(seed=None, calibration=True, scenario=None, future_symp_test=None, 
     pop_size     = [100e3, 5e3][debug] # Actual simulated population
     pop_scale    = int(total_pop/pop_size)
     pop_type     = 'hybrid'
-    pop_infected = 1500
+    pop_infected = [1500, 10][debug]
     beta         = beta
     asymp_factor = 2
     contacts     = {'h':3.0, 's':20, 'w':20, 'c':20}
@@ -84,7 +84,7 @@ def make_sim(seed=None, calibration=True, scenario=None, future_symp_test=None, 
         asymp_factor = asymp_factor,
         contacts     = contacts,
         rescale      = True,
-        rand_seed    = seed + np.prod(meta.inds) + np.sum(meta.inds), # TEMP
+        rand_seed    = seed,# + np.prod(meta.inds) + np.sum(meta.inds), # TEMP
         verbose      = verbose,
         #rel_severe_prob = 0.4,
         #rel_crit_prob = 2.3,
@@ -427,7 +427,7 @@ if __name__ == '__main__':
         do_save = False # Whether to save files to cache, if rerun
         sy_npts = [41, 5][debug]
         tr_npts = [41, 5][debug]
-        max_seeds = [10, 2][debug]
+        max_seeds = [10, 4][debug]
         symp_test_vals = np.linspace(0, 1, sy_npts)
         trace_eff_vals = np.linspace(0, 1, tr_npts)
         scenarios = ['masks30','masks30_notschools','masks15','masks15_notschools']
