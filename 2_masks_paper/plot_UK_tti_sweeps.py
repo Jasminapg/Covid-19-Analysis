@@ -13,7 +13,7 @@ import matplotlib.ticker as mtick
 
 # Paths and filenames
 figsfolder = 'figs'
-resfolder = 'results'
+resfolder = 'results/no_cachefeb19'
 scenarios = ['masks30_notschools', 'masks30', 'masks15_notschools', 'masks15']
 resnames = sc.odict({'cum_inf': 'Cumulative infections (millions)',
                      'peak_inf': 'Peak infections (thousands)',
@@ -71,6 +71,7 @@ for res in resnames.keys():
         else:
             dfs[res][scen] /= 1e3
     cbar_lims[res] = max(dfs[res]['masks15_notschools'].max())
+    #cbar_lims['peak_inf'] = 50
 
 #import traceback; traceback.print_exc(); import pdb; pdb.set_trace()
 

@@ -36,6 +36,7 @@ runoptions = ['quickfit', # Does a quick preliminary calibration. Quick to run, 
               'finalisefit', # Processes the results of the previous step to produce a calibration with the best seeds
               'scens', # Takes the best-fitting runs and projects these forward under different mask and TTI assumptions
               'tti_sweeps', # Sweeps over future testing/tracing values to create data for heatmaps
+              'mean_calcs'
               ]
 whattorun = runoptions[-1] #Select which of the above to run
 
@@ -502,4 +503,30 @@ if __name__ == '__main__':
                 cv.save(f'{resfolder}/uk_tti_sweeps_{scenname}.obj', sweep_summary)
         sc.toc(T)
 
+
+    elif whattorun=='mean_calcs':
+
+        scenarios = ['masks30','masks30_notschools','masks15','masks15_notschools']
+        npts = [41, 3][debug]
+        max_seeds = [10, 4][debug]
+        symp_test_vals = np.linspace(0, 1, npts)
+        trace_eff_vals = np.linspace(0, 1, npts)
+
+        for i_sc,scenname in enumerate(scenarios):
+            sweep_summary = {'cum_inf':[],'peak_inf':[],'cum_death':[]}
+            for i_fst,future_symp_test in enumerate(symp_test_vals):
+                cum_inf, peak_inf, cum_death = [], [], []
+                for i_fte,future_t_eff in enumerate(trace_eff_vals):
+                    msim = sc.loadobj(f'cache/final_msim{i_sc}_{i_fst}_{i_fte}.msim')
+                    msim.reduce(use_mean=True)
+                    data_end_day = msim.sims[0].day(data_end)
+                    cum_inf.append(msim.results['cum_infections'].values[-1]-msim.results['cum_infections'].values[data_end_day])
+                    peak_inf.append(max(msim.results['new_infections'].values[data_end_day:]))
+                    cum_death.append(msim.results['cum_deaths'].values[-1]-msim.results['cum_deaths'].values[data_end_day])
+
+                sweep_summary['cum_inf'].append(cum_inf)
+                sweep_summary['peak_inf'].append(peak_inf)
+                sweep_summary['cum_death'].append(cum_death)
+
+            cv.save(f'{resfolder}/uk_tti_sweeps_{scenname}_mean.obj', sweep_summary)
 
