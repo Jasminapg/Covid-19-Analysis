@@ -250,9 +250,7 @@ def run_sim(sim, do_load=True, do_save=True, do_shrink=True):
 
     # Caching -- WARNING, needs testing!
     seed = sim.meta.vals.seed
-    id_str = '_'.join([str(i) for i in sim.meta.inds])
     cachefile = f'{cachefolder}/cached_sim{seed}.sim' # File to save the partially run sim to
-    simfile = f'{cachefolder}/final_sim{id_str}.sim' # File to save the partially run sim to
     statusfile = f'{cachefolder}/status{seed}.tmp'
     sim, sim_loaded = try_loading_cached_sim(sim, cachefile, statusfile, do_load)
     loadstr = 'loaded from cache :)' if sim_loaded else 'could not load from cache'
@@ -268,9 +266,6 @@ def run_sim(sim, do_load=True, do_save=True, do_shrink=True):
     if do_shrink:
         sim.shrink()
 
-    if save_sim: # NB, generates ~2 GB of files for a full run
-        sim.save(simfile)
-
     return sim
 
 
@@ -280,7 +275,13 @@ def make_msims(sims):
     msim.reduce()
     i_sc, i_fst, i_fte, i_s = sims[0].meta.inds
     msim.meta = sc.objdict()
-    msim.meta.inds = i_sc, i_fst, i_fte
+    msim.meta.inds = [i_sc, i_fst, i_fte]
+
+    if save_sim: # NB, generates ~2 GB of files for a full run
+        id_str = '_'.join([str(i) for i in msim.meta.inds])
+        msimfile = f'{cachefolder}/final_msim{id_str}.msim' # File to save the partially run sim to
+        msim.save(msimfile)
+
     return msim
 
 
