@@ -12,7 +12,7 @@ import seaborn as sns
 import matplotlib.ticker as mtick
 
 # Paths and filenames
-figsfolder = 'figs_mean'
+figsfolder = 'figs'
 resfolder = 'results'
 scenarios = ['masks30_notschools', 'masks30', 'masks15_notschools', 'masks15']
 resnames = sc.odict({'cum_inf': 'Cumulative infections (millions)',
@@ -104,7 +104,7 @@ for res,label in resnames.iteritems():
             ax[pn].set_xlabel('% of contacts traced')
             # ax[pn].set_xticklabels([f'{int(i * 100)}%' for i in np.linspace(0, 1, 6)])
 
-    cv.savefig(f'{figsfolder}/fig_sweeps_{res}.png', dpi=100)
+    # cv.savefig(f'{figsfolder}/fig_sweeps_{res}.png', dpi=100)
 
 sc.toc(T)
 
