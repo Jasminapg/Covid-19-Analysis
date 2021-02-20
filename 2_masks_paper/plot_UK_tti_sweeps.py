@@ -94,16 +94,16 @@ for res,label in resnames.iteritems():
         ax[pn] = pl.axes([xgapl + (dx + xgapm) * (pn % ncols), ygapb + (ygapm + dy) * (pn // ncols), dx, dy])
 
         # use seaborn and heatmap without interpolating the heatmap
-        ax[pn] = sns.heatmap(dfs[res][scen], xticklabels=4, yticklabels=4, cmap=sns.cm.rocket_r,
+        ax[pn] = sns.heatmap(dfs[res][scen], xticklabels=8, yticklabels=8, cmap=sns.cm.rocket_r,
                              vmin=0, vmax=cbar_lims[res],
                              cbar=pn==0, cbar_ax=None if pn else cbar_ax,
                              cbar_kws={'label': label})
 
-        # use pylab and imshow's interpolation -- not suggested
+        # # use pylab and imshow's interpolation -- not suggested
         # im = ax[pn].imshow(dfs[res][scen], cmap=sns.cm.rocket_r,
         #               norm=Normalize(vmin=0, vmax=cbar_lims[res]),
         #               label=label,
-        #               interpolation='gaussian'
+        #               # interpolation='bicubic'
         #               )
 
         ax[pn].set_ylim(ax[pn].get_ylim()[::-1])
@@ -121,7 +121,7 @@ for res,label in resnames.iteritems():
 
     figdir = os.path.join(figsfolder)
     os.makedirs(figdir, exist_ok=True)
-    figpath = os.path.join(figdir, f"fig_sweeps_{res}.png")
+    figpath = os.path.join(figdir, f"fig_sweeps_{res}_new.png")
     cv.savefig(figpath, dpi=150)
 
 sc.toc(T)
