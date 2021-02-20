@@ -14,8 +14,8 @@ from matplotlib.colors import Normalize
 import os
 
 # Paths and filenames
-figsfolder = 'figs'
-resfolder = 'results'
+figsfolder = 'figs_mean'
+resfolder = 'results_mean'
 scenarios = ['masks30_notschools', 'masks30', 'masks15_notschools', 'masks15']
 resnames = sc.odict({'cum_inf': 'Cumulative infections (millions)',
                      'peak_inf': 'Peak infections (thousands)',
@@ -52,10 +52,6 @@ for scen in scenarios:
     filepath = f'{resfolder}/uk_tti_sweeps_{scen}.obj'
     sweep_summaries[scen] = sc.loadobj(filepath)
 
-msim = sc.loadobj(f'{resfolder}/uk_sim.obj')
-msim.reduce()
-inf_til_aug = msim.results['cum_infections'].values[-1]
-death_til_aug = msim.results['cum_deaths'].values[-1]
 
 # Translate them into a dict of dataframes
 dfs = sc.odict()
@@ -65,12 +61,13 @@ for res in resnames.keys():
     for scen in scenarios:
         dfs[res][scen] = pd.DataFrame(sweep_summaries[scen][res])
         if res=='cum_inf':
-            dfs[res][scen] = (dfs[res][scen]-inf_til_aug) / 1e6
+            dfs[res][scen] = (dfs[res][scen]) / 1e6
         elif res=='cum_death':
-            dfs[res][scen] = (dfs[res][scen] - death_til_aug) / 1e3
+            dfs[res][scen] = (dfs[res][scen]) / 1e3
         else:
             dfs[res][scen] /= 1e3
     cbar_lims[res] = max(dfs[res]['masks15_notschools'].max())
+    #cbar_lims['peak_inf'] = 50
 
 #import traceback; traceback.print_exc(); import pdb; pdb.set_trace()
 
@@ -92,6 +89,7 @@ for res,label in resnames.iteritems():
                fontsize=36, fontweight='bold', bbox={'edgecolor': 'none', 'facecolor': 'white', 'alpha': 0.5, 'pad': 4})
 
         ax[pn] = pl.axes([xgapl + (dx + xgapm) * (pn % ncols), ygapb + (ygapm + dy) * (pn // ncols), dx, dy])
+
 
         # use seaborn and heatmap without interpolating the heatmap
         ax[pn] = sns.heatmap(dfs[res][scen], xticklabels=8, yticklabels=8, cmap=sns.cm.rocket_r,
@@ -125,3 +123,13 @@ for res,label in resnames.iteritems():
     cv.savefig(figpath, dpi=150)
 
 sc.toc(T)
+
+# Calculate stats
+inf_stats = sc.odict()
+for reskey in ['cum_inf', 'peak_inf']:
+    inf_stats[reskey] = sc.odict()
+    for scen in scenarios:
+        inf_stats[reskey][scen] = sc.odict()
+        inf_stats[reskey][scen]['max'] = max(dfs[reskey][scen].max())
+    inf_stats[reskey]['mask_effect_30'] = ((dfs[reskey]['masks30_notschools']-dfs[reskey]['masks30']).mean()).mean()
+    inf_stats[reskey]['mask_effect_15'] = ((dfs[reskey]['masks15_notschools']-dfs[reskey]['masks15']).mean()).mean()
