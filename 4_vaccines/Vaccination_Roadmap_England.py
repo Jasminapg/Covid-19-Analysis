@@ -10,7 +10,7 @@ import utils
 # Settings and initialisation
 ########################################################################
 # Check version
-cv.check_version('3.0.0')
+cv.check_version('>3.0.0')
 cv.git_info('covasim_version.json')
 
 
@@ -23,7 +23,7 @@ plot_hist = 0 # Whether to plot an age histogram
 do_show = 0
 verbose = 1
 seed    = 1
-n_runs = 200
+n_runs = 500
 to_plot = sc.objdict({
     'Cumulative tests': ['cum_tests'],
     'First vaccine dose': ['n_dose_1'],
@@ -37,9 +37,10 @@ to_plot = sc.objdict({
 
 # Define what to run
 runoptions = ['quickfit', # Does a quick preliminary calibration. Quick to run, ~30s
+              'fullfit',
               'scens', # Runs the 3 scenarios
               'devel']
-whattorun = runoptions[0] #Select which of the above to run
+whattorun = runoptions[1] #Select which of the above to run
 
 # Filepaths
 data_path = 'UK_Covid_cases_april27_England.xlsx'
@@ -48,7 +49,7 @@ resfolder = 'results_delay'
 # Important dates
 start_day = '2020-01-21'
 end_day = '2021-12-31'
-data_end = '2021-04-10' # Final date for calibration
+data_end = '2021-04-27' # Final date for calibration
 
 
 ########################################################################
@@ -58,8 +59,7 @@ data_end = '2021-04-10' # Final date for calibration
 def make_sim(seed, beta, calibration=True, scenario=None, delta_beta=1.6, future_symp_test=None, end_day=None, verbose=0):
 
     # Set the parameters
-    #total_pop    = 67.86e6 # UK population size
-    total_pop    = 55.98e6 # UK population size
+    total_pop    = 55.98e6 # England population size
     pop_size     = 100e3 # Actual simulated population
     pop_scale    = int(total_pop/pop_size)
     pop_type     = 'hybrid'
@@ -101,35 +101,16 @@ def make_sim(seed, beta, calibration=True, scenario=None, delta_beta=1.6, future
                            '2020-06-15': [1.00, 0.38, 0.50, 0.50],
                            '2020-07-22': [1.29, 0.00, 0.30, 0.50],
                            '2020-09-02': [1.25, sbv,  0.50, 0.70],
-                           '2020-10-01': [1.25, sbv, 0.50, 0.70],
-                           '2020-10-16': [1.25, sbv, 0.50, 0.70],
                            '2020-10-26': [1.00, 0.00, 0.50, 0.70],
                            '2020-11-05': [1.25, sbv, 0.30, 0.40],
-                           '2020-11-14': [1.25, sbv, 0.30, 0.40],
-                           '2020-11-21': [1.25, sbv, 0.30, 0.40],
-                           '2020-11-30': [1.25, sbv, 0.30, 0.40],
                            '2020-12-03': [1.50, sbv, 0.50, 0.70],
                            '2020-12-20': [1.25, 0.00, 0.50, 0.70],
                            '2020-12-25': [1.50, 0.00, 0.20, 0.90],
-                           '2020-12-26': [1.50, 0.00, 0.20, 0.90],
-                           '2020-12-31': [1.50, 0.00, 0.20, 0.90],
-                           '2021-01-01': [1.50, 0.00, 0.20, 0.90],
                            '2021-01-04': [1.25, 0.14, 0.30, 0.40],
-                           '2021-01-11': [1.25, 0.14, 0.30, 0.40],
-                           '2021-01-18': [1.25, 0.14, 0.30, 0.40],
-                           '2021-01-18': [1.25, 0.14, 0.30, 0.40],
-                           '2021-01-30': [1.25, 0.14, 0.30, 0.40],
-                           '2021-02-08': [1.25, 0.14, 0.30, 0.40],
-                           '2021-02-15': [1.25, 0.14, 0.30, 0.40],
-                           '2021-02-22': [1.25, 0.14, 0.30, 0.40],
                            '2021-03-08': [1.25, sbv, 0.30, 0.50],
-                           '2021-03-15': [1.25, sbv, 0.30, 0.50],
-                           '2021-03-22': [1.25, sbv, 0.30, 0.50],
                            '2021-03-29': [1.25, 0.02, 0.30, 0.60],
-                           '2021-04-05': [1.25, 0.02, 0.30, 0.60]
                            '2021-04-12': [1.25, 0.02, 0.40, 0.70],
                            '2021-04-19': [1.25, sbv, 0.40, 0.70],
-                           '2021-04-26': [1.25, sbv, 0.40, 0.70]
                            })
 
     if not calibration:
@@ -141,29 +122,15 @@ def make_sim(seed, beta, calibration=True, scenario=None, delta_beta=1.6, future
         if scenario == 'Roadmap_All':
 
             beta_scens = sc.odict({'2021-05-03': [1.25, sbv, 0.40, 0.70],
-                               '2021-05-10': [1.25, sbv, 0.40, 0.70],
                                '2021-05-17': [1.25, sbv, 0.50, 0.80],
-                               '2021-05-21': [1.25, sbv, 0.50, 0.80],
                                '2021-05-28': [1.25, 0.02, 0.50, 0.80],
                                '2021-06-07': [1.25, sbv, 0.50, 0.80],
                                '2021-06-21': [1.25, sbv, 0.60, 0.90],
-                               '2021-06-28': [1.25, sbv, 0.60, 0.90],
-                               '2021-07-05': [1.25, sbv, 0.60, 0.90],
-                               '2021-07-12': [1.25, sbv, 0.60, 0.90],
                                '2021-07-19': [1.25, 0.00, 0.60, 0.90],
                                '2021-07-26': [1.25, 0.00, 0.50, 0.90],
-                               '2021-08-02': [1.25, 0.00, 0.50, 0.90],
-                               '2021-08-16': [1.25, 0.00, 0.50, 0.90],
                                '2021-09-01': [1.25, 0.63, 0.70, 0.90],
-                               '2021-09-15': [1.25, 0.63, 0.70, 0.90],
-                               '2021-09-29': [1.25, 0.63, 0.70, 0.90],
-                               '2021-10-13': [1.25, 0.63, 0.70, 0.90],
                                '2021-10-27': [1.25, 0.02, 0.70, 0.90],
                                '2021-11-08': [1.25, 0.63, 0.70, 0.90],
-                               '2021-11-23': [1.25, 0.63, 0.70, 0.90],
-                               '2021-11-30': [1.25, 0.63, 0.70, 0.90],  
-                               '2021-12-07': [1.25, 0.63, 0.70, 0.90],
-                               '2021-12-21': [1.25, 0.63, 0.70, 0.90],  
                               })
             
         ## reopening schools on 8th March, society stage 1 29th March, society stage 2 12th April ONLY 
@@ -172,58 +139,25 @@ def make_sim(seed, beta, calibration=True, scenario=None, delta_beta=1.6, future
         elif scenario == 'Roadmap_Stage2':
 
             beta_scens = sc.odict({'2021-05-03': [1.25, sbv, 0.40, 0.70],
-                               '2021-05-10': [1.25, sbv, 0.40, 0.70],
-                               '2021-05-17': [1.25, sbv, 0.40, 0.70],
-                               '2021-05-21': [1.25, sbv, 0.40, 0.70],
                                '2021-05-28': [1.25, 0.02, 0.40, 0.70],
                                '2021-06-07': [1.25, sbv, 0.40, 0.70],
-                               '2021-06-21': [1.25, sbv, 0.40, 0.70],
-                               '2021-06-28': [1.25, sbv, 0.40, 0.70],
-                               '2021-07-05': [1.25, sbv, 0.40, 0.70],
-                               '2021-07-12': [1.25, sbv, 0.40, 0.70],
                                '2021-07-19': [1.25, 0.00, 0.40, 0.70],
-                               '2021-07-26': [1.25, 0.00, 0.40, 0.70],
-                               '2021-08-02': [1.25, 0.00, 0.40, 0.70],
-                               '2021-08-16': [1.25, 0.00, 0.40, 0.70],
                                '2021-09-01': [1.25, 0.63, 0.70, 0.90],
-                               '2021-09-15': [1.25, 0.63, 0.70, 0.90],
-                               '2021-09-29': [1.25, 0.63, 0.70, 0.90],
-                               '2021-10-13': [1.25, 0.63, 0.70, 0.90],
                                '2021-10-27': [1.25, 0.02, 0.70, 0.90],
                                '2021-11-08': [1.25, 0.63, 0.70, 0.90],
-                               '2021-11-23': [1.25, 0.63, 0.70, 0.90],
-                               '2021-11-30': [1.25, 0.63, 0.70, 0.90],  
-                               '2021-12-07': [1.25, 0.63, 0.70, 0.90],
-                               '2021-12-21': [1.25, 0.63, 0.70, 0.90],  
                               })
         ## reopening schools on 8th March, society stage 1 29th March, society stage 2 12th April, 
         ## and society some more (stage 3) 17th May but NO stage 4 21st June 2021. 
         ## Projecting until end of 2021.
         elif scenario == 'Roadmap_Stage3':
             beta_scens = sc.odict({'2021-05-03': [1.25, sbv, 0.40, 0.70],
-                               '2021-05-10': [1.25, sbv, 0.40, 0.70],
                                '2021-05-17': [1.25, sbv, 0.50, 0.80],
-                               '2021-05-21': [1.25, sbv, 0.50, 0.80],
                                '2021-05-28': [1.25, 0.02, 0.50, 0.80],
                                '2021-06-07': [1.25, sbv, 0.50, 0.80],
-                               '2021-06-21': [1.25, sbv, 0.50, 0.80],
-                               '2021-06-28': [1.25, sbv, 0.50, 0.80],
-                               '2021-07-05': [1.25, sbv, 0.50, 0.80],
-                               '2021-07-12': [1.25, sbv, 0.50, 0.80],
                                '2021-07-19': [1.25, 0.00, 0.50, 0.80],
-                               '2021-07-26': [1.25, 0.00, 0.50, 0.80],
-                               '2021-08-02': [1.25, 0.00, 0.50, 0.80],
-                               '2021-08-16': [1.25, 0.00, 0.50, 0.80],
                                '2021-09-01': [1.25, 0.63, 0.70, 0.90],
-                               '2021-09-15': [1.25, 0.63, 0.70, 0.90],
-                               '2021-09-29': [1.25, 0.63, 0.70, 0.90],
-                               '2021-10-13': [1.25, 0.63, 0.70, 0.90],
                                '2021-10-27': [1.25, 0.02, 0.70, 0.90],
                                '2021-11-08': [1.25, 0.63, 0.70, 0.90],
-                               '2021-11-23': [1.25, 0.63, 0.70, 0.90],
-                               '2021-11-30': [1.25, 0.63, 0.70, 0.90],  
-                               '2021-12-07': [1.25, 0.63, 0.70, 0.90],
-                               '2021-12-21': [1.25, 0.63, 0.70, 0.90],  
                               })
         beta_dict = sc.mergedicts(beta_past, beta_scens)
     else:
@@ -401,7 +335,7 @@ def make_sim(seed, beta, calibration=True, scenario=None, delta_beta=1.6, future
 ########################################################################
 if __name__ == '__main__':
 
-    #betas = [i / 10000 for i in range(72, 77, 1)]
+    betas = [i / 10000 for i in range(75, 81, 1)]
 
     # Quick calibration
     if whattorun=='quickfit':
@@ -421,6 +355,30 @@ if __name__ == '__main__':
         if do_plot:
             msim.plot(to_plot=to_plot, do_save=True, do_show=False, fig_path=f'uk.png',
                       legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=60, n_cols=2)
+
+
+    # Full parameter/seed search
+    elif whattorun=='fullfit':
+        fitsummary = []
+        for beta in betas:
+            sc.blank()
+            print('---------------\n')
+            print(f'Beta: {beta}... ')
+            print('---------------\n')
+            s0 = make_sim(seed=1, beta=beta, end_day=data_end)
+            sims = []
+            for seed in range(n_runs):
+                sim = s0.copy()
+                sim['rand_seed'] = seed
+                sim.set_seed()
+                sim.label = f"Sim {seed}"
+                sims.append(sim)
+            msim = cv.MultiSim(sims)
+            msim.run()
+            fitsummary.append([sim.compute_fit().mismatch for sim in msim.sims])
+
+        sc.saveobj(f'{resfolder}/fitsummary.obj',fitsummary)
+
 
     # Run scenarios
     elif whattorun=='scens':
@@ -460,7 +418,9 @@ if __name__ == '__main__':
                           legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=120, n_cols=2)
 
             print(f'... completed scenario: {scenname}')
-            sc.toc(T) 
+            sc.toc(T)
+
+
     # Devel scenario
     elif whattorun == 'devel':
         s0 = make_sim(seed=1, beta=0.0078, end_day=data_end, verbose=0.1)
