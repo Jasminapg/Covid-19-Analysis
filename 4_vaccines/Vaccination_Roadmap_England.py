@@ -41,7 +41,7 @@ runoptions = ['quickfit', # Does a quick preliminary calibration. Quick to run, 
               'finalisefit',
               'scens', # Runs the 3 scenarios
               'devel']
-whattorun = runoptions[2] #Select which of the above to run
+whattorun = runoptions[1] #Select which of the above to run
 
 # Filepaths
 data_path = 'UK_Covid_cases_april27_England.xlsx'
