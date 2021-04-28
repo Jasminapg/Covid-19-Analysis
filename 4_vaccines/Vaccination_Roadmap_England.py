@@ -23,7 +23,7 @@ plot_hist = 0 # Whether to plot an age histogram
 do_show = 0
 verbose = 1
 seed    = 1
-n_runs = 500
+n_runs = 3000
 to_plot = sc.objdict({
     'Cumulative tests': ['cum_tests'],
     'First vaccine dose': ['n_dose_1'],
@@ -38,9 +38,10 @@ to_plot = sc.objdict({
 # Define what to run
 runoptions = ['quickfit', # Does a quick preliminary calibration. Quick to run, ~30s
               'fullfit',
+              'finalisefit',
               'scens', # Runs the 3 scenarios
               'devel']
-whattorun = runoptions[1] #Select which of the above to run
+whattorun = runoptions[2] #Select which of the above to run
 
 # Filepaths
 data_path = 'UK_Covid_cases_april27_England.xlsx'
@@ -56,7 +57,7 @@ data_end = '2021-04-27' # Final date for calibration
 # Create the baseline simulation
 ########################################################################
 
-def make_sim(seed, beta, calibration=True, scenario=None, delta_beta=1.6, future_symp_test=None, end_day=None, verbose=0):
+def make_sim(seed, beta, calibration=True, scenario=None, delta_beta=1.6, future_symp_test=None, end_day=None, verbose=0.1):
 
     # Set the parameters
     total_pop    = 55.98e6 # England population size
@@ -360,24 +361,56 @@ if __name__ == '__main__':
     # Full parameter/seed search
     elif whattorun=='fullfit':
         fitsummary = []
-        for beta in betas:
+        s0 = make_sim(seed=1, beta=0.0078, end_day=data_end)
+        sims = []
+        for seed in range(n_runs):
+            sim = s0.copy()
+            sim['rand_seed'] = seed
+            sim.set_seed()
+            sim.label = f"Sim {seed}"
+            sims.append(sim)
+        msim = cv.MultiSim(sims)
+        msim.run(par_args={'n_cpus':48})
+        fitsummary = [sim.compute_fit().mismatch for sim in msim.sims]
+        sc.saveobj(f'{resfolder}/fitsummary.obj',fitsummary)
+
+
+    # Run calibration with best-fitting seeds and parameters
+    elif whattorun=='finalisefit':
+        sims = []
+        fitsummary = sc.loadobj(f'{resfolder}/fitsummary.obj')
+        mismatches = np.array(fitsummary)
+        threshold = np.quantile(mismatches, 0.01)
+        good = 0
+
+        goodseeds = {beta: [i for i in range(n_runs) if mismatches[bn, i] < threshold] for bn, beta in enumerate(betas)}
+
+        for bn, beta in enumerate(betas[:1]):
+            goodseeds = [i for i in range(n_runs) if mismatches[bn, i] < threshold]
             sc.blank()
             print('---------------\n')
-            print(f'Beta: {beta}... ')
+            print(f'BN: {bn}, Beta: {beta} goodseeds: {len(goodseeds)}')
             print('---------------\n')
-            s0 = make_sim(seed=1, beta=beta, end_day=data_end)
-            sims = []
-            for seed in range(n_runs):
-                sim = s0.copy()
-                sim['rand_seed'] = seed
-                sim.set_seed()
-                sim.label = f"Sim {seed}"
-                sims.append(sim)
-            msim = cv.MultiSim(sims)
-            msim.run()
-            fitsummary.append([sim.compute_fit().mismatch for sim in msim.sims])
+            good += len(goodseeds)
+            if len(goodseeds) > 0:
+                s0 = make_sim(seed=1, beta=beta, end_day=data_end)
+                for seed in goodseeds:
+                    sim = s0.copy()
+                    sim['rand_seed'] = seed
+                    sim.set_seed()
+                    sim.label = f"Sim {seed}"
+                    sims.append(sim)
 
-        sc.saveobj(f'{resfolder}/fitsummary.obj',fitsummary)
+        msim = cv.MultiSim(sims)
+        msim.run()
+
+        if do_save:
+            msim.save(f'{resfolder}/uk_sim.obj')
+        if do_plot:
+            msim.reduce()
+            msim.plot(to_plot=to_plot, do_save=do_save, do_show=False, fig_path=f'uk.png',
+                      legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=50, n_cols=2)
+
 
 
     # Run scenarios
