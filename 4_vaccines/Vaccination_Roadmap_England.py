@@ -23,7 +23,7 @@ plot_hist = 0 # Whether to plot an age histogram
 do_show = 0
 verbose = 1
 seed    = 1
-n_runs = 3000
+n_runs = 1000
 to_plot = sc.objdict({
     'Cumulative tests': ['cum_tests'],
     'First vaccine dose': ['n_dose_1'],
