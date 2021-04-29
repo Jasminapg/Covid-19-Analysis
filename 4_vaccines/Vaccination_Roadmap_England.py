@@ -370,7 +370,7 @@ if __name__ == '__main__':
             sim.label = f"Sim {seed}"
             sims.append(sim)
         msim = cv.MultiSim(sims)
-        msim.run(par_args={'n_cpus':48})
+        msim.run()
         fitsummary = [sim.compute_fit().mismatch for sim in msim.sims]
         sc.saveobj(f'{resfolder}/fitsummary.obj',fitsummary)
 
