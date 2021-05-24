@@ -69,7 +69,7 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
     asymp_factor = 2
     contacts     = {'h':3.0, 's':20, 'w':20, 'c':20}
     beta_layer   = {'h':3.0, 's':1.0, 'w':0.6, 'c':0.3}
-    if end_day is None: end_day = '2021-05-05'
+    if end_day is None: end_day = '2021-05-25'
 
     pars = sc.objdict(
         use_waning   = True,
@@ -271,9 +271,6 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
                 # if j != k:
                 #     sim['immunity'][k][j] = cross_immunities['b117'][j_lab]
                 #     sim['immunity'][j][k] = cross_immunities[j_lab]['b117']
-    # # Add a new change in beta to represent the takeover of the novel variant VOC B117 202012/01
-    # # Assume that the new variant is 60% more transmisible (https://cmmid.github.io/topics/covid19/uk-novel-variant.html,
-    # # Assume that between Nov 1 and Jan 30, the new variant grows from 0-100% of cases
 
     interventions = [h_beta, w_beta, s_beta, c_beta]
 
@@ -345,7 +342,7 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
     iso_vals4 = [{k:0.7 for k in 'hswc'}]
      #isolation december
     iso_vals5 = [{k:0.7 for k in 'hswc'}]
-    #isolation January-April
+    #playing with this for impact of isolation January-April 2021
     #iso_vals6 = [{k:0.3 for k in 'hswc'}]
 
 
@@ -461,7 +458,7 @@ if __name__ == '__main__':
 
     # Quick calibration
     if whattorun=='quickfit':
-        s0 = make_sim(seed=1, beta=0.008, end_day='2021-05-25', verbose=0.1)
+        s0 = make_sim(seed=1, beta=0.0079, end_day='2021-05-25', verbose=0.1)
         sims = []
         for seed in range(4):
             sim = s0.copy()
