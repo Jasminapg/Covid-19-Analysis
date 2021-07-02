@@ -1,11 +1,9 @@
 import sciris as sc
 import covasim as cv
-import covasim.base as cvb
 import covasim.parameters as cvp
 import pylab as pl
 import numpy as np
-import matplotlib as mplt
-import pandas as pd
+
 
 ########################################################################
 # Settings and initialisation
@@ -47,7 +45,7 @@ to_plot = sc.objdict({
 runoptions = ['quickfit', # Does a quick preliminary calibration. Quick to run, ~30s
               'scens', # Runs the 3 scenarios
               'devel']
-whattorun = runoptions[2] #Select which of the above to run
+whattorun = runoptions[1] #Select which of the above to run
 
 # Filepaths
 data_path = 'England_Covid_cases_june26.xlsx'
@@ -75,7 +73,7 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
     beta         = beta
     asymp_factor = 2
     contacts     = {'h':3.0, 's':20, 'w':20, 'c':20}
-    beta_layer   = {'h':3.0, 's':1.0, 'w':0.6, 'c':0.3}
+    # beta_layer   = {'h':3.0, 's':1.0, 'w':0.6, 'c':0.3}
     if end_day is None: end_day = '2021-05-05'
 
     pars = sc.objdict(
@@ -176,10 +174,10 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
                            })
 
     if not calibration:
-        ##no schools until 8th March but assue 20% (1 in 5) in schools between 04/01-22/02; 
+        ##no schools until 8th March but assue 20% (1 in 5) in schools between 04/01-22/02;
         ##model transmission remaining at schools as 14% (to account for 30% reduction due to school measures)
-        ## reopening schools on 8th March, society stage 1 29th March, society stage 2 12th April, 
-        ## society some more (stage 3) 17th May and everything (stage 4) 21st June 2021. 
+        ## reopening schools on 8th March, society stage 1 29th March, society stage 2 12th April,
+        ## society some more (stage 3) 17th May and everything (stage 4) 21st June 2021.
         ## Projecting until end of 2021.
         if scenario == 'Roadmap_All':
 
@@ -199,14 +197,14 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
                                '2021-11-01': [1.25, 0.63, 0.70, 0.90],
                                '2021-11-08': [1.25, 0.63, 0.70, 0.90],
                                '2021-11-23': [1.25, 0.63, 0.70, 0.90],
-                               '2021-11-30': [1.25, 0.63, 0.70, 0.90],  
+                               '2021-11-30': [1.25, 0.63, 0.70, 0.90],
                                '2021-12-07': [1.25, 0.63, 0.70, 0.90],
                                '2021-12-20': [1.25, 0.02, 0.50, 0.80],
-                               '2022-01-05': [1.25, 0.63, 0.70, 0.90],  
+                               '2022-01-05': [1.25, 0.63, 0.70, 0.90],
                               })
-            
-        ## reopening schools on 8th March, society stage 1 29th March, society stage 2 12th April ONLY 
-        ## NO (stage 3) 17th May and NO stage 4 21st June 2021. 
+
+        ## reopening schools on 8th March, society stage 1 29th March, society stage 2 12th April ONLY
+        ## NO (stage 3) 17th May and NO stage 4 21st June 2021.
         ## Projecting until end of 2021.
         #elif scenario == 'Roadmap_Stage2':
 
@@ -234,12 +232,12 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
             #                   '2021-10-27': [1.25, 0.02, 0.70, 0.90],
             #                   '2021-11-08': [1.25, 0.63, 0.70, 0.90],
             #                   '2021-11-23': [1.25, 0.63, 0.70, 0.90],
-            #                   '2021-11-30': [1.25, 0.63, 0.70, 0.90],  
+            #                   '2021-11-30': [1.25, 0.63, 0.70, 0.90],
             #                   '2021-12-07': [1.25, 0.63, 0.70, 0.90],
-            #                   '2021-12-21': [1.25, 0.63, 0.70, 0.90],  
+            #                   '2021-12-21': [1.25, 0.63, 0.70, 0.90],
             #                  })
-        ## reopening schools on 8th March, society stage 1 29th March, society stage 2 12th April, 
-        ## and society some more (stage 3) 17th May but NO stage 4 21st June 2021. 
+        ## reopening schools on 8th March, society stage 1 29th March, society stage 2 12th April,
+        ## and society some more (stage 3) 17th May but NO stage 4 21st June 2021.
         ## Projecting until end of 2021.
         elif scenario == 'Roadmap_Stage3':
             beta_scens = sc.odict({'2021-06-21': [1.25, sbv, 0.40, 0.60],
@@ -258,10 +256,10 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
                                '2021-11-01': [1.25, 0.63, 0.70, 0.90],
                                '2021-11-08': [1.25, 0.63, 0.70, 0.90],
                                '2021-11-23': [1.25, 0.63, 0.70, 0.90],
-                               '2021-11-30': [1.25, 0.63, 0.70, 0.90],  
+                               '2021-11-30': [1.25, 0.63, 0.70, 0.90],
                                '2021-12-07': [1.25, 0.63, 0.70, 0.90],
                                '2021-12-20': [1.25, 0.02, 0.50, 0.80],
-                               '2022-01-05': [1.25, 0.63, 0.70, 0.90],  
+                               '2022-01-05': [1.25, 0.63, 0.70, 0.90],
                               })
         beta_dict = sc.mergedicts(beta_past, beta_scens)
     else:
@@ -328,28 +326,28 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
     tti_day_feb= sim.day('2021-02-01')
     tti_day_march= sim.day('2021-03-08')
     tti_day_april= sim.day('2021-03-01')
-    #start of vaccinating those 75years+
-    tti_day_vac1= sim.day('2021-01-03')
-    #start of vaccinating 60+ old
-    tti_day_vac2= sim.day('2021-02-03')
-    #start of vaccinating 55+ years old
-    tti_day_vac3= sim.day('2021-02-28')
-    #start of vaccination 50+ years old
-    tti_day_vac4= sim.day('2021-03-10')
-    #start vaccinating of 45+   
-    tti_day_vac5= sim.day('2021-03-30')
-    #start vaccinating of 40+   
-    tti_day_vac6= sim.day('2021-04-20')
-    #start vaccinating of 35+
-    tti_day_vac7= sim.day('2021-05-05')
-    #start vaccinating of 30+
-    tti_day_vac8= sim.day('2021-05-30')
-    #start vaccinating of 25+
-    tti_day_vac9= sim.day('2021-06-10')
-    #start vaccinating of 18+
-    tti_day_vac10= sim.day('2021-06-30')
-    #start vaccinating of 11-17
-    tti_day_vac11= sim.day('2021-07-10')
+    # #start of vaccinating those 75years+
+    # tti_day_vac1= sim.day('2021-01-03')
+    # #start of vaccinating 60+ old
+    # tti_day_vac2= sim.day('2021-02-03')
+    # #start of vaccinating 55+ years old
+    # tti_day_vac3= sim.day('2021-02-28')
+    # #start of vaccination 50+ years old
+    # tti_day_vac4= sim.day('2021-03-10')
+    # #start vaccinating of 45+
+    # tti_day_vac5= sim.day('2021-03-30')
+    # #start vaccinating of 40+
+    # tti_day_vac6= sim.day('2021-04-20')
+    # #start vaccinating of 35+
+    # tti_day_vac7= sim.day('2021-05-05')
+    # #start vaccinating of 30+
+    # tti_day_vac8= sim.day('2021-05-30')
+    # #start vaccinating of 25+
+    # tti_day_vac9= sim.day('2021-06-10')
+    # #start vaccinating of 18+
+    # tti_day_vac10= sim.day('2021-06-30')
+    # #start vaccinating of 11-17
+    # tti_day_vac11= sim.day('2021-07-10')
 
 
     s_prob_april = 0.009
@@ -357,13 +355,13 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
     s_prob_june = 0.02769
     s_prob_july = 0.02769
     s_prob_august = 0.03769
-    tn = 0.09
+    # tn = 0.09
     s_prob_sep = 0.08769
     s_prob_oct = 0.08769
     s_prob_nov = 0.08769
     s_prob_dec = 0.08769
     s_prob_jan = 0.08769
-    
+
     #0.114=70%; 0.149=80%; 0.205=90%
 
     if future_symp_test is None: future_symp_test = s_prob_jan
@@ -400,7 +398,7 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
         cv.test_prob(symp_prob=s_prob_jan, asymp_prob=0.0063, symp_quar_prob=0.0, start_day=tti_day_jan, end_day=tti_day_feb-1, test_delay=t_delay),
         cv.test_prob(symp_prob=s_prob_jan, asymp_prob=0.008, symp_quar_prob=0.0, start_day=tti_day_feb, end_day=tti_day_march-1, test_delay=t_delay),
         cv.test_prob(symp_prob=s_prob_jan, asymp_prob=0.008, symp_quar_prob=0.0, start_day=tti_day_march, end_day=tti_day_april-1, test_delay=t_delay),
-        cv.test_prob(symp_prob=s_prob_jan, asymp_prob=0.008, symp_quar_prob=0.0, start_day=tti_day_april, test_delay=t_delay),  
+        cv.test_prob(symp_prob=s_prob_jan, asymp_prob=0.008, symp_quar_prob=0.0, start_day=tti_day_april, test_delay=t_delay),
         cv.contact_tracing(trace_probs={'h': 1, 's': 0.8, 'w': 0.8, 'c': 0.05},
                            trace_time={'h': 0, 's': 1, 'w': 1, 'c': 2},
                            start_day='2020-06-01', end_day='2023-06-30',
@@ -416,8 +414,8 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
         cv.dynamic_pars({'iso_factor': {'days': tti_day_nov, 'vals': iso_vals4}}),
         cv.dynamic_pars({'iso_factor': {'days': tti_day_dec, 'vals': iso_vals5}})]
         #cv.dynamic_pars({'rel_death_prob': {'days': tti_day_vac, 'vals': 0.9}})]
-        #cv.vaccine(days=[0,14], rel_sus=0.4, rel_symp=0.2, cumulative=[0.7, 0.3])]   
-    
+        #cv.vaccine(days=[0,14], rel_sus=0.4, rel_symp=0.2, cumulative=[0.7, 0.3])]
+
 
     # derived from AZ default params (3.0.2) with increased interval between doses)
     # dose_pars = cvp.get_vaccine_dose_pars()['az']
@@ -441,7 +439,7 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
     #    return {'inds': inds, 'vals': 0.020*np.ones(len(inds))}
     #interventions += [utils_vac.vaccinate(vaccine=vaccine, prob=0.1, subtarget=subtarget_75_100,
     #                               days=np.arange(sim.day('2020-12-20'), sim.day('2023-01-01')))]
-    
+
     #  age targeted vaccination
     def subtarget_75_100(sim):
         inds = cv.true(sim.people.age >= 75)
@@ -451,7 +449,7 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
         return {'inds': inds, 'vals': 0.02*np.ones(len(inds))}
     interventions += [cv.vaccinate(vaccine=pfizer_vaccine, prob=0.1, subtarget=subtarget_75_100,
                                    days=np.arange(sim.day('2020-12-20'), sim.day('2021-10-30')))]
-    
+
     def subtarget_60_75(sim):
         inds = cv.true((sim.people.age >= 60) & (sim.people.age < 75))
         if not hasattr(sim, 'subtarget_60_75'):
@@ -460,7 +458,7 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
         return {'inds': inds, 'vals': 0.02*np.ones(len(inds))}
     interventions += [cv.vaccinate(vaccine=pfizer_vaccine, prob=0.1, subtarget=subtarget_60_75,
                                    days=np.arange(sim.day('2021-01-28'), sim.day('2021-10-30')))]
-    
+
     def subtarget_50_60(sim):
         inds = cv.true((sim.people.age >= 50) & (sim.people.age < 60))
         if not hasattr(sim, 'subtarget_50_60'):
@@ -469,7 +467,7 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
         return {'inds': inds, 'vals': 0.005*np.ones(len(inds))}
     interventions += [cv.vaccinate(vaccine=az_vaccine, prob=0.1, subtarget=subtarget_50_60,
                                    days=np.arange(sim.day('2021-02-10'), sim.day('2021-10-30')))]
-    
+
     #def subtarget_40_50(sim):
     #    inds = cv.true((sim.people.age >= 40) & (sim.people.age < 50))
     #    if not hasattr(sim, 'subtarget_40_50'):
@@ -478,8 +476,8 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
     #    return {'inds': inds, 'vals': 0.005*np.ones(len(inds))}
     #interventions += [cv.vaccinate(vaccine=az_vaccine, prob=0.1, subtarget=subtarget_40_50,
     #                               days=np.arange(sim.day('2021-04-10'), sim.day('2023-01-01')))]
-  
-    
+
+
     def subtarget_45_50(sim):
         inds = cv.true((sim.people.age >= 45) & (sim.people.age < 50))
         if not hasattr(sim, 'subtarget_45_50'):
@@ -488,7 +486,7 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
         return {'inds': inds, 'vals': 0.002*np.ones(len(inds))}
     interventions += [cv.vaccinate(vaccine=az_vaccine, prob=0.1, subtarget=subtarget_45_50,
                                    days=np.arange(sim.day('2021-03-20'), sim.day('2021-10-30')))]
-    
+
     def subtarget_40_45(sim):
         inds = cv.true((sim.people.age >= 40) & (sim.people.age < 45))
         if not hasattr(sim, 'subtarget_40_45'):
@@ -513,7 +511,7 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
         return {'inds': inds, 'vals': 0.002*np.ones(len(inds))}
     interventions += [cv.vaccinate(vaccine=pfizer_vaccine, prob=0.1, subtarget=subtarget_25_30,
                                    days=np.arange(sim.day('2021-06-10'), sim.day('2021-10-30')))]
-    
+
     def subtarget_18_25(sim):
         inds = cv.true((sim.people.age >= 18) & (sim.people.age < 25))
         if not hasattr(sim, 'subtarget_18_30'):
@@ -522,7 +520,7 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
         return {'inds': inds, 'vals': 0.002*np.ones(len(inds))}
     interventions += [cv.vaccinate(vaccine=pfizer_vaccine, prob=0.1, subtarget=subtarget_18_25,
                                    days=np.arange(sim.day('2021-06-20'), sim.day('2021-10-30')))]
-    
+
     def subtarget_12_17(sim):
         inds = cv.true((sim.people.age >= 12) & (sim.people.age < 17))
         if not hasattr(sim, 'subtarget_12_17'):
@@ -576,16 +574,16 @@ if __name__ == '__main__':
         msim = cv.MultiSim(sims)
         msim.run()
         #msim.reduce()
-        msim.reduce(quantiles = [0.25,0.75]) 
+        msim.reduce(quantiles = [0.25,0.75])
         #sim.to_excel('my-sim.xlsx')
         if save_sim:
                     msim.reduce()
                     #msim.reduce(quantiles=[0.25, 0.75])
                     msim.save(f'{resfolder}/uk_sim_test_80all.obj',keep_people=True)
         if do_plot:
-            msim.plot(to_plot=to_plot, do_save=True, do_show=False, fig_path=f'uk_80all.png',
+            msim.plot(to_plot=to_plot, do_save=True, do_show=False, fig_path='uk_80all.png',
                       legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=90, n_cols=2)
-            msim.plot('variants', do_save=True, do_show=False, fig_path=f'uk_strain_80all.png')
+            msim.plot('variants', do_save=True, do_show=False, fig_path='uk_strain_80all.png')
     # Run scenarios
     elif whattorun=='scens':
 
@@ -628,7 +626,7 @@ if __name__ == '__main__':
                           legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=120, n_cols=2)
 
             print(f'... completed scenario: {scenname}')
-            sc.toc(T) 
+            sc.toc(T)
     # Devel scenario
     elif whattorun == 'devel':
         s0 = make_sim(seed=1, beta=0.0079, end_day=data_end, verbose=0.1)
@@ -646,9 +644,8 @@ if __name__ == '__main__':
 
 
         # make figure
-        import matplotlib.pyplot as plt
         dx = 0.9/(len(date_bin_edges)-1)
-        fig, axes = plt.subplots(1, len(daily_age.states), figsize=(3*len(daily_age.states), 3))
+        fig, axes = pl.subplots(1, len(daily_age.states), figsize=(3*len(daily_age.states), 3))
         for ix ,state in enumerate(daily_age.states):
             ax = axes[ix]
             for idate in range(len(date_bin_edges)-1):
@@ -656,15 +653,15 @@ if __name__ == '__main__':
                        label='range {}'.format(idate))
             ax.set_xticks(np.arange(len(daily_age.bins)) + 0.5)
             ax.set_xticklabels(daily_age.bins)
-        plt.show()
+        pl.show()
 
         # plt as a time series
         daily_age.plot()
 
         # s0.plot(to_plot=to_plot)
         # s0.save('devel.sim', keep_people=True)
-        
-    
+
+
 
 # Add histogram
 if plot_hist:
@@ -765,6 +762,6 @@ if plot_hist:
     pl.ylabel('Deaths')
     sc.boxoff(ax[1])
     pl.legend(frameon=False, bbox_to_anchor=(0.3,0.7))
-    
+
     plotname = 'uk_stats_by_age_agg.png' if aggregate else 'uk_stats_by_age.png'
     cv.savefig(plotname, dpi=100)
