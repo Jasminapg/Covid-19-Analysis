@@ -9,7 +9,7 @@ import numpy as np
 # Settings and initialisation
 ########################################################################
 # Check version
-cv.check_version('3.0.5')
+cv.check_version('3.0.7')
 cv.git_info('covasim_version.json')
 
 
@@ -22,7 +22,7 @@ plot_hist = 0 # Whether to plot an age histogram
 do_show = 0
 verbose = 1
 seed    = 1
-n_runs = 200
+keep_people = 0 # Whether to keep people
 to_plot = sc.objdict({
     'Cumulative diagnoses': ['cum_diagnoses'],
     'Cumulative hospitalisations': ['cum_severe'],
@@ -562,7 +562,7 @@ if __name__ == '__main__':
         #scenarios = ['Roadmap_All', 'Roadmap_Stage3']
         scenarios = ['Roadmap_All']
         #scenarios = ['FNL', 'fullPNL', 'primaryPNL']
-        vx_scenarios = [0,1,2] # Should match vx_scens above to run all scenarios
+        vx_scenarios = [0]#,1,2] # Should match vx_scens above to run all scenarios
         T = sc.tic()
         for scenname in scenarios:
             for vx_scenario in vx_scenarios:
@@ -586,14 +586,14 @@ if __name__ == '__main__':
                 msim = cv.MultiSim(sims)
                 #msim.run()
                 # msim.run(n_cpus=4)
-                msim.run() # Use all available cores
+                msim.run(keep_people=keep_people) # Use all available cores
                 msim.reduce()
                 #msim.reduce(quantiles=[0.25, 0.75])
 
                 if save_sim:
                         msim.reduce()
                         #msim.reduce(quantiles=[0.25, 0.75])
-                        msim.save(f'{resfolder}/uk_sim_{scenkey}.obj',keep_people=True)
+                        msim.save(f'{resfolder}/uk_sim_{scenkey}.obj',keep_people=keep_people)
                         #msim.save(f'{resfolder}/uk_sim_{scenname}.obj',keep_people=False)
                 if do_plot:
                     msim.reduce()
