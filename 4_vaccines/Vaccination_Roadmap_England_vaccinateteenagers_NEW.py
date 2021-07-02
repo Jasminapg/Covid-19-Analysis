@@ -587,6 +587,8 @@ if __name__ == '__main__':
     # Run scenarios
     elif whattorun=='scens':
 
+        n_seeds = 10
+
         #scenarios = ['Roadmap_All', 'Roadmap_Stage2', 'Roadmap_Stage3']
         #scenarios = ['Roadmap_All', 'Roadmap_Stage3']
         scenarios = ['Roadmap_All']
@@ -602,15 +604,16 @@ if __name__ == '__main__':
             #s0.run(until='2021-12-31')
             sims = []
 
-            for seed in range(10):
+            for seed in range(n_seeds):
                 sim = s0.copy()
                 sim['rand_seed'] = seed
                 sim.set_seed()
-                sim.label = f"Sim {seed}"
+                sim.label = f"Sim {scenname} {seed}"
                 sims.append(sim)
             msim = cv.MultiSim(sims)
             #msim.run()
-            msim.run(n_cpus=4)
+            # msim.run(n_cpus=4)
+            msim.run() # Use all available cores
             msim.reduce()
             #msim.reduce(quantiles=[0.25, 0.75])
 
