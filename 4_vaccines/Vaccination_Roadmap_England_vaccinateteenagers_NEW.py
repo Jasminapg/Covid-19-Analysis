@@ -527,7 +527,7 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
             sim.subtarget_18_25 = cv.binomial_filter(0.3, inds) # 30% of 18+ years olds will not agree to get vaccinated
         inds = np.setdiff1d(inds, sim.subtarget_12_17)
         return {'inds': inds, 'vals': 0.002*np.ones(len(inds))}
-    interventions += [cv.vaccinate(vaccine=pfizer_vaccine, prob=0.1, subtarget=subtarget_18_25,
+    interventions += [cv.vaccinate(vaccine=pfizer_vaccine, prob=0.1, subtarget=subtarget_12_17,
                                    days=np.arange(sim.day('2021-07-20'), sim.day('2021-10-30')))]
 
     analyzers = []
