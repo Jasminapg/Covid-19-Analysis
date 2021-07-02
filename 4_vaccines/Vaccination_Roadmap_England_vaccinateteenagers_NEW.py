@@ -58,10 +58,68 @@ data_end = '2021-06-26' # Final date for calibration
 
 
 ########################################################################
+# Set scenario data
+########################################################################
+
+vx_ages = [75, 60, 50, 45, 40, 30, 25, 18, 12]
+vx_duration = 14 # Number of days of vaccine rollout
+vx_scens = [0,1,2] # Define the vaccination scenarios
+
+# Define ages and start days
+vx_rollout = {
+    75: dict(start_age=75, end_age=100, start_day='2020-12-20'),
+    60: dict(start_age=60, end_age=75,  start_day='2021-01-28'),
+    50: dict(start_age=50, end_age=60,  start_day='2021-02-10'),
+    45: dict(start_age=45, end_age=50,  start_day='2021-03-20'),
+    40: dict(start_age=40, end_age=45,  start_day='2021-04-10'),
+    30: dict(start_age=30, end_age=40,  start_day='2021-05-10'),
+    25: dict(start_age=25, end_age=30,  start_day='2021-06-10'),
+    18: dict(start_age=18, end_age=25,  start_day='2021-06-20'),
+    12: dict(start_age=12, end_age=18,  start_day='2021-07-20'),
+}
+
+# Define vaccination probabilities for each scenario
+scendata = {
+    # Scen 0     1     2
+    75: [0.95, 0.95, 0.95],
+    60: [0.95, 0.95, 0.95],
+    50: [0.90, 0.80, 0.90],
+    45: [0.90, 0.80, 0.90],
+    40: [0.90, 0.80, 0.90],
+    30: [0.90, 0.60, 0.90],
+    25: [0.90, 0.60, 0.90],
+    18: [0.90, 0.60, 0.90],
+    12: [0.00, 0.60, 0.70],
+}
+
+# Define the age targeting functions
+def subtarget(sim, age=None, vx_scenario=None):
+    rollout = vx_rollout[age]
+    inds = cv.true((sim.people.age >= rollout['start_age']) * (sim.people.age < rollout['end_age']))
+    key = f'subtarget_{age}'
+    if not hasattr(sim, key):
+        prob = scendata[age][vx_scenario]
+        vx_inds = cv.binomial_filter(prob, inds) # 5% of 75+ years olds will not agree to get vaccinated
+        setattr(sim, key, vx_inds)
+    else:
+        vx_inds = getattr(sim, key)
+    inds = np.setdiff1d(inds, vx_inds)
+    return {'inds': inds, 'vals': (1/vx_duration)*np.ones(len(inds))}
+
+# Pre-define all of the subtargeting functions
+subtargets = {}
+for vx_scen in vx_scens:
+    subtargets[vx_scen] = {}
+    for age in vx_ages:
+        subtargeting_function = lambda sim: subtarget(sim, age=age, vx_scenario=vx_scenario) # "Pre-fill" age and scenario data so the sim is the only input
+        subtargets[vx_scen][age] = subtargeting_function
+
+
+########################################################################
 # Create the baseline simulation
 ########################################################################
 
-def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None, end_day='2021-10-30', verbose=0):
+def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None, vx_scenario=None, end_day='2021-10-30', verbose=0):
 
     # Set the parameters
     #total_pop    = 67.86e6 # UK population size
@@ -425,265 +483,22 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
     dose_pars = cvp.get_vaccine_dose_pars()['az']
     dose_pars['interval'] = 7 * 12
     variant_pars = cvp.get_vaccine_variant_pars()['az']
-    az_vaccine = sc.mergedicts({'label':'az_uk'}, sc.mergedicts(dose_pars, variant_pars))
-
+    az_vaccine = sc.mergedicts({'label':'az_uk'}, sc.mergedicts(dose_pars, variant_pars)) # WARNING: AZ not used
 
     dose_pars = cvp.get_vaccine_dose_pars()['pfizer']
     dose_pars['interval'] = 7 * 12
     variant_pars = cvp.get_vaccine_variant_pars()['pfizer']
     pfizer_vaccine = sc.mergedicts({'label':'pfizer_uk'}, sc.mergedicts(dose_pars, variant_pars))
 
-     ###########################SCENARIOS 1#############################
-    #95% uptake in 75-100 and 60-75
-    #90% uptake in 18-60
-    #not vaccinate 12-17
-    #average uptake =80% in 12-100 years old
-    def subtarget_75_100(sim):
-        inds = cv.true(sim.people.age >= 75)
-        if not hasattr(sim, 'subtarget_75_100'):
-            sim.subtarget_75_100 = cv.binomial_filter(0.95, inds) # 5% of 75+ years olds will not agree to get vaccinated
-        inds = np.setdiff1d(inds, sim.subtarget_75_100)
-        return {'inds': inds, 'vals': 0.02*np.ones(len(inds))}
-    interventions += [cv.vaccinate(vaccine=pfizer_vaccine, prob=0.1, subtarget=subtarget_75_100,
-                                   days=np.arange(sim.day('2020-12-20'), sim.day('2021-10-30')))]
-    
-    def subtarget_60_75(sim):
-        inds = cv.true((sim.people.age >= 60) & (sim.people.age < 75))
-        if not hasattr(sim, 'subtarget_60_75'):
-            sim.subtarget_60_75 = cv.binomial_filter(0.95, inds) # 5% of 60-75 years olds will not agree to get vaccinated
-        inds = np.setdiff1d(inds, sim.subtarget_60_75)
-        return {'inds': inds, 'vals': 0.02*np.ones(len(inds))}
-    interventions += [cv.vaccinate(vaccine=pfizer_vaccine, prob=0.1, subtarget=subtarget_60_75,
-                                   days=np.arange(sim.day('2021-01-28'), sim.day('2021-10-30')))]
-    
-    def subtarget_50_60(sim):
-        inds = cv.true((sim.people.age >= 50) & (sim.people.age < 60))
-        if not hasattr(sim, 'subtarget_50_60'):
-            sim.subtarget_50_60 = cv.binomial_filter(0.90, inds) # 10% of 50-60 years olds will not agree to get vaccinated
-        inds = np.setdiff1d(inds, sim.subtarget_50_60)
-        return {'inds': inds, 'vals': 0.005*np.ones(len(inds))}
-    interventions += [cv.vaccinate(vaccine=az_vaccine, prob=0.1, subtarget=subtarget_50_60,
-                                   days=np.arange(sim.day('2021-02-10'), sim.day('2021-10-30')))]
-    
-    def subtarget_45_50(sim):
-        inds = cv.true((sim.people.age >= 45) & (sim.people.age < 50))
-        if not hasattr(sim, 'subtarget_45_50'):
-            sim.subtarget_45_50 = cv.binomial_filter(0.90, inds) # 10% of 45-50 years olds will not agree to get vaccinated
-        inds = np.setdiff1d(inds, sim.subtarget_45_50)
-        return {'inds': inds, 'vals': 0.002*np.ones(len(inds))}
-    interventions += [cv.vaccinate(vaccine=az_vaccine, prob=0.1, subtarget=subtarget_45_50,
-                                   days=np.arange(sim.day('2021-03-20'), sim.day('2021-10-30')))]
-    
-    def subtarget_40_45(sim):
-        inds = cv.true((sim.people.age >= 40) & (sim.people.age < 45))
-        if not hasattr(sim, 'subtarget_40_45'):
-            sim.subtarget_40_45 = cv.binomial_filter(0.90, inds) # 10% of 40-45 years olds will not agree to get vaccinated
-        inds = np.setdiff1d(inds, sim.subtarget_40_45)
-        return {'inds': inds, 'vals': 0.002*np.ones(len(inds))}
-    interventions += [cv.vaccinate(vaccine=az_vaccine, prob=0.1, subtarget=subtarget_40_45,
-                                   days=np.arange(sim.day('2021-04-10'), sim.day('2021-10-30')))]
-    def subtarget_30_40(sim):
-        inds = cv.true((sim.people.age >= 30) & (sim.people.age < 40))
-        if not hasattr(sim, 'subtarget_30_40'):
-            sim.subtarget_30_40 = cv.binomial_filter(0.90, inds) # 10% of 30-40+ years olds will not agree to get vaccinated
-        inds = np.setdiff1d(inds, sim.subtarget_30_40)
-        return {'inds': inds, 'vals': 0.002*np.ones(len(inds))}
-    interventions += [cv.vaccinate(vaccine=pfizer_vaccine, prob=0.1, subtarget=subtarget_30_40,
-                                   days=np.arange(sim.day('2021-05-10'), sim.day('2021-10-30')))]
-    def subtarget_25_30(sim):
-        inds = cv.true((sim.people.age >= 25) & (sim.people.age < 30))
-        if not hasattr(sim, 'subtarget_25_30'):
-            sim.subtarget_25_30 = cv.binomial_filter(0.90, inds) # 10% of 25-30 years olds will not agree to get vaccinated
-        inds = np.setdiff1d(inds, sim.subtarget_25_30)
-        return {'inds': inds, 'vals': 0.002*np.ones(len(inds))}
-    interventions += [cv.vaccinate(vaccine=pfizer_vaccine, prob=0.1, subtarget=subtarget_25_30,
-                                   days=np.arange(sim.day('2021-06-10'), sim.day('2021-10-30')))]
-    
-    def subtarget_18_25(sim):
-        inds = cv.true((sim.people.age >= 18) & (sim.people.age < 25))
-        if not hasattr(sim, 'subtarget_18_30'):
-            sim.subtarget_18_25 = cv.binomial_filter(0.90, inds) # 10% of 18-25 years olds will not agree to get vaccinated
-        inds = np.setdiff1d(inds, sim.subtarget_18_25)
-        return {'inds': inds, 'vals': 0.002*np.ones(len(inds))}
-    interventions += [cv.vaccinate(vaccine=pfizer_vaccine, prob=0.1, subtarget=subtarget_18_25,
-                                   days=np.arange(sim.day('2021-06-20'), sim.day('2021-10-30')))]
-    
-    #def subtarget_12_17(sim):
-    #    inds = cv.true((sim.people.age >= 12) & (sim.people.age < 17))
-    #    if not hasattr(sim, 'subtarget_12_17'):
-    #        sim.subtarget_12_17 = cv.binomial_filter(0.0, inds) # 100% of 12-17 years olds will not get vaccinated
-    #    inds = np.setdiff1d(inds, sim.subtarget_12_17)
-    #    return {'inds': inds, 'vals': 0.002*np.ones(len(inds))}
-    #interventions += [cv.vaccinate(vaccine=pfizer_vaccine, prob=0.1, subtarget=subtarget_12_17,
-    #                               days=np.arange(sim.day('2021-07-20'), sim.day('2021-10-30')))]
-    #  age targeted vaccination
-    ###########################SCENARIOS 2#############################
-    #95% uptake in 75-100 and 6-75
-    #80% uptake in 50-60 and 40-50
-    #60% uptake in 18-40
-    #60% uptake in 12-17
-    def subtarget_75_100(sim):
-        inds = cv.true(sim.people.age >= 75)
-        if not hasattr(sim, 'subtarget_75_100'):
-            sim.subtarget_75_100 = cv.binomial_filter(0.95, inds) # 5% of 75+ years olds will not agree to get vaccinated
-        inds = np.setdiff1d(inds, sim.subtarget_75_100)
-        return {'inds': inds, 'vals': 0.02*np.ones(len(inds))}
-    interventions += [cv.vaccinate(vaccine=pfizer_vaccine, prob=0.1, subtarget=subtarget_75_100,
-                                   days=np.arange(sim.day('2020-12-20'), sim.day('2021-10-30')))]
-    
-    def subtarget_60_75(sim):
-        inds = cv.true((sim.people.age >= 60) & (sim.people.age < 75))
-        if not hasattr(sim, 'subtarget_60_75'):
-            sim.subtarget_60_75 = cv.binomial_filter(0.95, inds) # 5% of 60-75 years olds will not agree to get vaccinated
-        inds = np.setdiff1d(inds, sim.subtarget_60_75)
-        return {'inds': inds, 'vals': 0.02*np.ones(len(inds))}
-    interventions += [cv.vaccinate(vaccine=pfizer_vaccine, prob=0.1, subtarget=subtarget_60_75,
-                                   days=np.arange(sim.day('2021-01-28'), sim.day('2021-10-30')))]
-    
-    def subtarget_50_60(sim):
-        inds = cv.true((sim.people.age >= 50) & (sim.people.age < 60))
-        if not hasattr(sim, 'subtarget_50_60'):
-            sim.subtarget_50_60 = cv.binomial_filter(0.80, inds) # 20% of 50-60 years olds will not agree to get vaccinated
-        inds = np.setdiff1d(inds, sim.subtarget_50_60)
-        return {'inds': inds, 'vals': 0.005*np.ones(len(inds))}
-    interventions += [cv.vaccinate(vaccine=az_vaccine, prob=0.1, subtarget=subtarget_50_60,
-                                   days=np.arange(sim.day('2021-02-10'), sim.day('2021-10-30')))]
-    
-    def subtarget_45_50(sim):
-        inds = cv.true((sim.people.age >= 45) & (sim.people.age < 50))
-        if not hasattr(sim, 'subtarget_45_50'):
-            sim.subtarget_45_50 = cv.binomial_filter(0.80, inds) # 20% of 45-50 years olds will not agree to get vaccinated
-        inds = np.setdiff1d(inds, sim.subtarget_45_50)
-        return {'inds': inds, 'vals': 0.002*np.ones(len(inds))}
-    interventions += [cv.vaccinate(vaccine=az_vaccine, prob=0.1, subtarget=subtarget_45_50,
-                                   days=np.arange(sim.day('2021-03-20'), sim.day('2021-10-30')))]
-    
-    def subtarget_40_45(sim):
-        inds = cv.true((sim.people.age >= 40) & (sim.people.age < 45))
-        if not hasattr(sim, 'subtarget_40_45'):
-            sim.subtarget_40_45 = cv.binomial_filter(0.60, inds) # 40% of 40-45 years olds will not agree to get vaccinated
-        inds = np.setdiff1d(inds, sim.subtarget_40_45)
-        return {'inds': inds, 'vals': 0.002*np.ones(len(inds))}
-    interventions += [cv.vaccinate(vaccine=az_vaccine, prob=0.1, subtarget=subtarget_40_45,
-                                   days=np.arange(sim.day('2021-04-10'), sim.day('2021-10-30')))]
-    def subtarget_30_40(sim):
-        inds = cv.true((sim.people.age >= 30) & (sim.people.age < 40))
-        if not hasattr(sim, 'subtarget_30_40'):
-            sim.subtarget_30_40 = cv.binomial_filter(0.60, inds) # 40% of 30-40+ years olds will not agree to get vaccinated
-        inds = np.setdiff1d(inds, sim.subtarget_30_40)
-        return {'inds': inds, 'vals': 0.002*np.ones(len(inds))}
-    interventions += [cv.vaccinate(vaccine=pfizer_vaccine, prob=0.1, subtarget=subtarget_30_40,
-                                   days=np.arange(sim.day('2021-05-10'), sim.day('2021-10-30')))]
-    def subtarget_25_30(sim):
-        inds = cv.true((sim.people.age >= 25) & (sim.people.age < 30))
-        if not hasattr(sim, 'subtarget_25_30'):
-            sim.subtarget_25_30 = cv.binomial_filter(0.60, inds) # 40% of 25-30 years olds will not agree to get vaccinated
-        inds = np.setdiff1d(inds, sim.subtarget_25_30)
-        return {'inds': inds, 'vals': 0.002*np.ones(len(inds))}
-    interventions += [cv.vaccinate(vaccine=pfizer_vaccine, prob=0.1, subtarget=subtarget_25_30,
-                                   days=np.arange(sim.day('2021-06-10'), sim.day('2021-10-30')))]
-    
-    def subtarget_18_25(sim):
-        inds = cv.true((sim.people.age >= 18) & (sim.people.age < 25))
-        if not hasattr(sim, 'subtarget_18_30'):
-            sim.subtarget_18_25 = cv.binomial_filter(0.60, inds) # 40% of 18-25 years olds will not agree to get vaccinated
-        inds = np.setdiff1d(inds, sim.subtarget_18_25)
-        return {'inds': inds, 'vals': 0.002*np.ones(len(inds))}
-    interventions += [cv.vaccinate(vaccine=pfizer_vaccine, prob=0.1, subtarget=subtarget_18_25,
-                                   days=np.arange(sim.day('2021-06-20'), sim.day('2021-10-30')))]
-    
-    def subtarget_12_17(sim):
-        inds = cv.true((sim.people.age >= 12) & (sim.people.age < 17))
-        if not hasattr(sim, 'subtarget_12_17'):
-            sim.subtarget_12_17 = cv.binomial_filter(0.60, inds) # 40% of 12-17 years olds will not agree to get vaccinated
-        inds = np.setdiff1d(inds, sim.subtarget_12_17)
-        return {'inds': inds, 'vals': 0.002*np.ones(len(inds))}
-    interventions += [cv.vaccinate(vaccine=pfizer_vaccine, prob=0.1, subtarget=subtarget_12_17,
-                                   days=np.arange(sim.day('2021-07-20'), sim.day('2021-10-30')))]
+    # Loop over vaccination in different ages
+    for age in vx_ages:
+        subtarget = subtargets[vx_scen][age]
+        vx_start_day = sim.day(vx_rollout[age]['start_day'])
+        vx_end_day = vx_start_day + vx_duration
+        days = np.arange(vx_start_day, vx_end_day)
+        vx = cv.vaccinate(vaccine=pfizer_vaccine, subtarget=subtarget, days=days)
+        interventions += [vx]
 
-    ###########################SCENARIOS 3#############################
-    #95% uptake in 75-100 and 6-75
-    #90% uptake in 18-60
-    #70% uptake in 12-17
-    def subtarget_75_100(sim):
-        inds = cv.true(sim.people.age >= 75)
-        if not hasattr(sim, 'subtarget_75_100'):
-            sim.subtarget_75_100 = cv.binomial_filter(0.95, inds) # 5% of 75+ years olds will not agree to get vaccinated
-        inds = np.setdiff1d(inds, sim.subtarget_75_100)
-        return {'inds': inds, 'vals': 0.02*np.ones(len(inds))}
-    interventions += [cv.vaccinate(vaccine=pfizer_vaccine, prob=0.1, subtarget=subtarget_75_100,
-                                   days=np.arange(sim.day('2020-12-20'), sim.day('2021-10-30')))]
-    
-    def subtarget_60_75(sim):
-        inds = cv.true((sim.people.age >= 60) & (sim.people.age < 75))
-        if not hasattr(sim, 'subtarget_60_75'):
-            sim.subtarget_60_75 = cv.binomial_filter(0.95, inds) # 5% of 60-75 years olds will not agree to get vaccinated
-        inds = np.setdiff1d(inds, sim.subtarget_60_75)
-        return {'inds': inds, 'vals': 0.02*np.ones(len(inds))}
-    interventions += [cv.vaccinate(vaccine=pfizer_vaccine, prob=0.1, subtarget=subtarget_60_75,
-                                   days=np.arange(sim.day('2021-01-28'), sim.day('2021-10-30')))]
-    
-    def subtarget_50_60(sim):
-        inds = cv.true((sim.people.age >= 50) & (sim.people.age < 60))
-        if not hasattr(sim, 'subtarget_50_60'):
-            sim.subtarget_50_60 = cv.binomial_filter(0.90, inds) # 10% of 50-60 years olds will not agree to get vaccinated
-        inds = np.setdiff1d(inds, sim.subtarget_50_60)
-        return {'inds': inds, 'vals': 0.005*np.ones(len(inds))}
-    interventions += [cv.vaccinate(vaccine=az_vaccine, prob=0.1, subtarget=subtarget_50_60,
-                                   days=np.arange(sim.day('2021-02-10'), sim.day('2021-10-30')))]
-    
-    def subtarget_45_50(sim):
-        inds = cv.true((sim.people.age >= 45) & (sim.people.age < 50))
-        if not hasattr(sim, 'subtarget_45_50'):
-            sim.subtarget_45_50 = cv.binomial_filter(0.90, inds) # 10% of 45-50 years olds will not agree to get vaccinated
-        inds = np.setdiff1d(inds, sim.subtarget_45_50)
-        return {'inds': inds, 'vals': 0.002*np.ones(len(inds))}
-    interventions += [cv.vaccinate(vaccine=az_vaccine, prob=0.1, subtarget=subtarget_45_50,
-                                   days=np.arange(sim.day('2021-03-20'), sim.day('2021-10-30')))]
-    
-    def subtarget_40_45(sim):
-        inds = cv.true((sim.people.age >= 40) & (sim.people.age < 45))
-        if not hasattr(sim, 'subtarget_40_45'):
-            sim.subtarget_40_45 = cv.binomial_filter(0.90, inds) # 10% of 40-45 years olds will not agree to get vaccinated
-        inds = np.setdiff1d(inds, sim.subtarget_40_45)
-        return {'inds': inds, 'vals': 0.002*np.ones(len(inds))}
-    interventions += [cv.vaccinate(vaccine=az_vaccine, prob=0.1, subtarget=subtarget_40_45,
-                                   days=np.arange(sim.day('2021-04-10'), sim.day('2021-10-30')))]
-    def subtarget_30_40(sim):
-        inds = cv.true((sim.people.age >= 30) & (sim.people.age < 40))
-        if not hasattr(sim, 'subtarget_30_40'):
-            sim.subtarget_30_40 = cv.binomial_filter(0.90, inds) # 10% of 30-40+ years olds will not agree to get vaccinated
-        inds = np.setdiff1d(inds, sim.subtarget_30_40)
-        return {'inds': inds, 'vals': 0.002*np.ones(len(inds))}
-    interventions += [cv.vaccinate(vaccine=pfizer_vaccine, prob=0.1, subtarget=subtarget_30_40,
-                                   days=np.arange(sim.day('2021-05-10'), sim.day('2021-10-30')))]
-    def subtarget_25_30(sim):
-        inds = cv.true((sim.people.age >= 25) & (sim.people.age < 30))
-        if not hasattr(sim, 'subtarget_25_30'):
-            sim.subtarget_25_30 = cv.binomial_filter(0.90, inds) # 10% of 25-30 years olds will not agree to get vaccinated
-        inds = np.setdiff1d(inds, sim.subtarget_25_30)
-        return {'inds': inds, 'vals': 0.002*np.ones(len(inds))}
-    interventions += [cv.vaccinate(vaccine=pfizer_vaccine, prob=0.1, subtarget=subtarget_25_30,
-                                   days=np.arange(sim.day('2021-06-10'), sim.day('2021-10-30')))]
-    
-    def subtarget_18_25(sim):
-        inds = cv.true((sim.people.age >= 18) & (sim.people.age < 25))
-        if not hasattr(sim, 'subtarget_18_30'):
-            sim.subtarget_18_25 = cv.binomial_filter(0.90, inds) # 10% of 18-25 years olds will not agree to get vaccinated
-        inds = np.setdiff1d(inds, sim.subtarget_18_25)
-        return {'inds': inds, 'vals': 0.002*np.ones(len(inds))}
-    interventions += [cv.vaccinate(vaccine=pfizer_vaccine, prob=0.1, subtarget=subtarget_18_25,
-                                   days=np.arange(sim.day('2021-06-20'), sim.day('2021-10-30')))]
-    
-    def subtarget_12_17(sim):
-        inds = cv.true((sim.people.age >= 12) & (sim.people.age < 17))
-        if not hasattr(sim, 'subtarget_12_17'):
-            sim.subtarget_12_17 = cv.binomial_filter(0.7, inds) # 30% of 12-17 years olds will not agree to get vaccinated
-        inds = np.setdiff1d(inds, sim.subtarget_12_17)
-        return {'inds': inds, 'vals': 0.002*np.ones(len(inds))}
-    interventions += [cv.vaccinate(vaccine=pfizer_vaccine, prob=0.1, subtarget=subtarget_12_17,
-                                   days=np.arange(sim.day('2021-07-20'), sim.day('2021-10-30')))]
-  
     analyzers = []
 
     # add daily age stats analyzer
@@ -741,49 +556,54 @@ if __name__ == '__main__':
     # Run scenarios
     elif whattorun=='scens':
 
-        n_seeds = 10
+        n_seeds = 5
 
         #scenarios = ['Roadmap_All', 'Roadmap_Stage2', 'Roadmap_Stage3']
         #scenarios = ['Roadmap_All', 'Roadmap_Stage3']
         scenarios = ['Roadmap_All']
         #scenarios = ['FNL', 'fullPNL', 'primaryPNL']
+        vx_scenarios = [0,1,2] # Should match vx_scens above to run all scenarios
         T = sc.tic()
         for scenname in scenarios:
+            for vx_scenario in vx_scenarios:
 
-            print('---------------\n')
-            print(f'Beginning scenario: {scenname}')
-            print('---------------\n')
-            sc.blank()
-            s0 = make_sim(seed=1, beta=0.0078, end_day='2021-12-31', calibration=False, scenario=scenname, verbose=0.1)
-            #s0.run(until='2021-12-31')
-            sims = []
+                scenkey = f'{scenname}_vxscen{vx_scenario}'
 
-            for seed in range(n_seeds):
-                sim = s0.copy()
-                sim['rand_seed'] = seed
-                sim.set_seed()
-                sim.label = f"Sim {scenname} {seed}"
-                sims.append(sim)
-            msim = cv.MultiSim(sims)
-            #msim.run()
-            # msim.run(n_cpus=4)
-            msim.run() # Use all available cores
-            msim.reduce()
-            #msim.reduce(quantiles=[0.25, 0.75])
+                print('---------------\n')
+                print(f'Beginning scenario: {scenkey}')
+                print('---------------\n')
+                sc.blank()
+                s0 = make_sim(seed=1, beta=0.0078, end_day='2021-12-31', calibration=False, scenario=scenarios[0], vx_scenario=vx_scenario, verbose=0.1)
+                #s0.run(until='2021-12-31')
+                sims = []
 
-            if save_sim:
-                    msim.reduce()
-                    #msim.reduce(quantiles=[0.25, 0.75])
-                    msim.save(f'{resfolder}/uk_sim_{scenname}.obj',keep_people=True)
-                    #msim.save(f'{resfolder}/uk_sim_{scenname}.obj',keep_people=False)
-            if do_plot:
+                for seed in range(n_seeds):
+                    sim = s0.copy()
+                    sim['rand_seed'] = seed
+                    sim.set_seed()
+                    sim.label = f"Sim {scenkey} {seed}"
+                    sims.append(sim)
+                msim = cv.MultiSim(sims)
+                #msim.run()
+                # msim.run(n_cpus=4)
+                msim.run() # Use all available cores
                 msim.reduce()
                 #msim.reduce(quantiles=[0.25, 0.75])
-                msim.plot(to_plot=to_plot, do_save=do_save, do_show=False, fig_path=f'uk_{scenname}_current.png',
-                          legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=120, n_cols=2)
 
-            print(f'... completed scenario: {scenname}')
-            sc.toc(T)
+                if save_sim:
+                        msim.reduce()
+                        #msim.reduce(quantiles=[0.25, 0.75])
+                        msim.save(f'{resfolder}/uk_sim_{scenkey}.obj',keep_people=True)
+                        #msim.save(f'{resfolder}/uk_sim_{scenname}.obj',keep_people=False)
+                if do_plot:
+                    msim.reduce()
+                    #msim.reduce(quantiles=[0.25, 0.75])
+                    msim.plot(to_plot=to_plot, do_save=do_save, do_show=False, fig_path=f'uk_{scenkey}_current.png',
+                              legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=120, n_cols=2)
+
+                print(f'... completed scenario: {scenkey}')
+                sc.toc(T)
+
     # Devel scenario
     elif whattorun == 'devel':
         s0 = make_sim(seed=1, beta=0.0079, end_day=data_end, verbose=0.1)
