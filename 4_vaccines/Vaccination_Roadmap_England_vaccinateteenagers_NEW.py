@@ -45,7 +45,7 @@ to_plot = sc.objdict({
 runoptions = ['quickfit', # Does a quick preliminary calibration. Quick to run, ~30s
               'scens', # Runs the 3 scenarios
               'devel']
-whattorun = runoptions[1] #Select which of the above to run
+whattorun = runoptions[2] #Select which of the above to run
 
 # Filepaths
 data_path = 'England_Covid_cases_june26.xlsx'
@@ -111,7 +111,7 @@ subtargets = {}
 for vx_scen in vx_scens:
     subtargets[vx_scen] = {}
     for age in vx_ages:
-        subtargeting_function = lambda sim: subtarget(sim, age=age, vx_scenario=vx_scenario) # "Pre-fill" age and scenario data so the sim is the only input
+        subtargeting_function = lambda sim: subtarget(sim, age=age, vx_scenario=vx_scen) # "Pre-fill" age and scenario data so the sim is the only input
         subtargets[vx_scen][age] = subtargeting_function
 
 
@@ -483,7 +483,7 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
     dose_pars = cvp.get_vaccine_dose_pars()['az']
     dose_pars['interval'] = 7 * 12
     variant_pars = cvp.get_vaccine_variant_pars()['az']
-    az_vaccine = sc.mergedicts({'label':'az_uk'}, sc.mergedicts(dose_pars, variant_pars)) # WARNING: AZ not used
+    # az_vaccine = sc.mergedicts({'label':'az_uk'}, sc.mergedicts(dose_pars, variant_pars)) # WARNING: AZ not used
 
     dose_pars = cvp.get_vaccine_dose_pars()['pfizer']
     dose_pars['interval'] = 7 * 12
@@ -532,7 +532,7 @@ if __name__ == '__main__':
 
     # Quick calibration
     if whattorun=='quickfit':
-        s0 = make_sim(seed=1, beta=0.0078, end_day='2021-12-31', verbose=0.1)
+        s0 = make_sim(seed=1, beta=0.0078, end_day='2021-12-31', verbose=0.1, vx_scenarios=[0])
         sims = []
         for seed in range(20):
             sim = s0.copy()
@@ -562,7 +562,7 @@ if __name__ == '__main__':
         #scenarios = ['Roadmap_All', 'Roadmap_Stage3']
         scenarios = ['Roadmap_All']
         #scenarios = ['FNL', 'fullPNL', 'primaryPNL']
-        vx_scenarios = [0]#,1,2] # Should match vx_scens above to run all scenarios
+        vx_scenarios = [0,1,2] # Should match vx_scens above to run all scenarios
         T = sc.tic()
         for scenname in scenarios:
             for vx_scenario in vx_scenarios:
@@ -606,7 +606,7 @@ if __name__ == '__main__':
 
     # Devel scenario
     elif whattorun == 'devel':
-        s0 = make_sim(seed=1, beta=0.0079, end_day=data_end, verbose=0.1)
+        s0 = make_sim(seed=1, beta=0.0079, end_day=data_end, verbose=0.1, vx_scenario=0)
         s0.run()
 
         daily_age = s0.get_analyzer()
