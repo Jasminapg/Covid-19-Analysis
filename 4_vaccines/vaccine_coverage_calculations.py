@@ -18,7 +18,7 @@ data = np.array(data)
 n_scens = data.shape[1]-2
 results = np.zeros(n_scens)
 
-denom = sum(sim.people.age >= 12)
+denom = pop_size # Or sum(sim.people.age >= 12)
 
 for row in data:
     matches = (sim.people.age >= row[0]) * (sim.people.age < row[1])
