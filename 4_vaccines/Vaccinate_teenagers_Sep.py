@@ -61,7 +61,7 @@ data_end = '2021-08-30' # Final date for calibration
 # Set scenario data
 ########################################################################
 
-vx_ages = [75, 60, 50, 45, 40, 30, 25, 18, 12]
+vx_ages = [75, 60, 50, 45, 40, 30, 25, 18, 16, 12]
 vx_duration = 14 # Number of days of vaccine rollout
 vx_scens = [0,1,2] # Define the vaccination scenarios
 
@@ -518,6 +518,7 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
         vx_end_day = vx_start_day + vx_duration
         days = np.arange(vx_start_day, vx_end_day)
         vx = cv.vaccinate(vaccine=vaccine, subtarget=subtarget, days=days)
+        #vx = cv.vaccinate(vaccine=vaccine, days=days, prob=0.01)
         interventions += [vx]
 
     analyzers = []
