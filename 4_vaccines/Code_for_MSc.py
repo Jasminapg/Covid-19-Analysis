@@ -335,9 +335,6 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
     b117.p['rel_severe_prob'] = 0.6
     b117.p['rel_crit_prob']   = 2.7
     b117.p['rel_death_prob']  = 0.6
-    #b117.p['rel_severe_prob'] = 0.7
-    #b117.p['rel_crit_prob']   = 1.0
-    #b117.p['rel_death_prob']  = 1.0
     sim['variants'] += [b117]
     # Add B.1.1351 strain
     b1351 = cv.variant('b1351', days=np.arange(sim.day('2021-01-10'), sim.day('2021-01-20')), n_imports=1500)
@@ -353,9 +350,6 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
     b16172.p['rel_severe_prob']  = 0.2
     b16172.p['rel_crit_prob']    = 0.2
     b16172.p['rel_death_prob']   = 0.2
-    #b16172.p['rel_severe_prob'] = 0.7
-    #b16172.p['rel_crit_prob']   = 1.0
-    #b16172.p['rel_death_prob']  = 0.7
     sim['variants'] += [b16172]
     
     interventions = [h_beta, w_beta, s_beta, c_beta]
