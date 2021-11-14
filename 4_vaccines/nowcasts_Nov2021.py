@@ -79,7 +79,7 @@ vx_rollout = {
     18: dict(start_age=18, end_age=25,  start_day='2021-06-30'),
     16: dict(start_age=16, end_age=18,  start_day='2021-08-10'),
     12: dict(start_age=12, end_age=15,  start_day='2021-09-01'),
-    5: dict(start_age=5, end_age=11,  start_day='2021-12-01'),
+    #5: dict(start_age=5, end_age=11,  start_day='2021-12-01'),
 }
 
 # Define vaccination probabilities for each scenario
@@ -95,7 +95,7 @@ scendata = {
     18: [0.50, 0.50, 0.90],
     16: [0.30, 0.60, 0.90],
     12: [0.30, 0.60, 0.70],
-    5:  [0.30, 0.60, 0.70],
+    #5:  [0.30, 0.60, 0.70],
 }
 
 # Define the age targeting functions
