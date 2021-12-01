@@ -28,8 +28,9 @@ to_plot = sc.objdict({
     #'Cumulative deaths': ['cum_deaths'],
     'Daily infections': ['new_diagnoses'],
     'Daily hospitalisations': ['new_severe'],
-    #'Daily ICUs': ['new_critical'],
+    'Daily ICUs': ['new_critical'],
     'Daily deaths': ['new_deaths'],
+    'Occupancy': ['n_severe'],
     #'Cum tests': ['cum_tests'],
     'Prevalence': ['prevalence'],
     'Incidence': ['incidence'],
@@ -38,7 +39,7 @@ to_plot = sc.objdict({
     #'1st dose': ['n_dose_1'],
     #'2nd dose': ['n_dose_2'],
     #'number vaccinated': ['n_vaccinated'],
-    #'proportion vaccinated': ['frac_vaccinated'],
+    'proportion vaccinated': ['frac_vaccinated'],
     #'Vaccinations ': ['cum_vaccinations'],
     'Vaccinated': ['cum_vaccinated'],
 })
@@ -50,13 +51,13 @@ runoptions = ['quickfit', # Does a quick preliminary calibration. Quick to run, 
 whattorun = runoptions[0] #Select which of the above to run
 
 # Filepaths
-data_path = 'England_Covid_cases_Nov132021.xlsx'
+data_path = 'England_Covid_cases_Nov272021.xlsx'
 resfolder = 'results_Vac'
 
 # Important dates
 start_day = '2020-01-20'
 end_day = '2022-01-15'
-data_end = '2021-11-13' # Final date for calibration
+data_end = '2021-11-27' # Final date for calibration
 
 
 ########################################################################
@@ -79,26 +80,26 @@ vx_rollout = {
     18: dict(start_age=18, end_age=25,  start_day='2021-06-30'),
     16: dict(start_age=16, end_age=18,  start_day='2021-08-10'),
     12: dict(start_age=12, end_age=15,  start_day='2021-09-01'),
-    #5: dict(start_age=5, end_age=11,  start_day='2021-12-01'),
+    #5: dict(start_age=5, end_age=11,  start_day='2022-12-01'),
 }
 
 # Define vaccination probabilities for each scenario
 scendata = {
     # Scen 0     1     2
-    75: [0.95, 0.95, 0.95],
-    60: [0.95, 0.95, 0.95],
-    50: [0.90, 0.90, 0.90],
-    45: [0.90, 0.90, 0.90],
-    40: [0.80, 0.80, 0.90],
-    30: [0.80, 0.80, 0.90],
-    25: [0.50, 0.50, 0.90],
-    18: [0.50, 0.50, 0.90],
-    16: [0.30, 0.60, 0.90],
-    12: [0.30, 0.60, 0.70],
-    #5:  [0.30, 0.60, 0.70],
+    75: [0.95, 0.05, 0.95],
+    60: [0.95, 0.05, 0.95],
+    50: [0.90, 0.05, 0.90],
+    45: [0.90, 0.20, 0.90],
+    40: [0.80, 0.25, 0.90],
+    35: [0.80, 0.45, 0.90],
+    30: [0.80, 0.45, 0.90],
+    25: [0.50, 0.40, 0.90],
+    18: [0.50, 0.40, 0.90],
+    16: [0.30, 0.40, 0.90],
+    12: [0.30, 0.40, 0.70],
+    #5:  [0.00, 0.60, 0.70],
 }
 
-# Define the age targeting functions
 def subtarget(sim, age=None, vx_scenario=None):
     rollout = vx_rollout[age]
     inds = cv.true((sim.people.age >= rollout['start_age']) * (sim.people.age < rollout['end_age']))
@@ -111,6 +112,8 @@ def subtarget(sim, age=None, vx_scenario=None):
         vx_inds = getattr(sim, key)
     inds = np.setdiff1d(inds, vx_inds)
     return {'inds': inds, 'vals': 0.65*np.ones(len(inds))}
+#output = dict(inds=inds, vals=vals)
+#        return output 
 
 # Pre-define all of the subtargeting functions
 subtargets = {}
@@ -362,8 +365,8 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
     s_beta = cv.change_beta(days=beta_days, changes=[c[1] for c in beta_dict.values()], layers='s')
     w_beta = cv.change_beta(days=beta_days, changes=[c[2] for c in beta_dict.values()], layers='w')
     c_beta = cv.change_beta(days=beta_days, changes=[c[3] for c in beta_dict.values()], layers='c')
-
-    # Add B.1.1351 strain from Janury 2021
+    # adding different variants: B.1.177 in September 2020, Alpha slightly later and Delta from April 2021
+    # Add B.1.177 strain from September 2020 and assume it's like b1351 (no vaccine at this time in England)
     b1351 = cv.variant('b1351', days=np.arange(sim.day('2020-08-10'), sim.day('2020-08-20')), n_imports=3000)
     b1351.p['rel_beta']        = 1.2
     #b1351.p['rel_symp_prob']   = 1.0
@@ -371,8 +374,7 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
     #b1351.p['rel_crit_prob']   = 1.2
     #b1351.p['rel_death_prob']  = 1.0
     sim['variants'] += [b1351]
-
-    # Add B.1.117 strain from Septemmber 2020
+    # Add Alpha strain from October 2020
     b117 = cv.variant('b117', days=np.arange(sim.day('2020-10-20'), sim.day('2020-10-30')), n_imports=3000)
     b117.p['rel_beta']        = 1.8
     #b117.p['rel_symp_prob']   = 1.1
@@ -383,20 +385,13 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
     #b117.p['rel_crit_prob']   = 1.0
     #b117.p['rel_death_prob']  = 1.0
     sim['variants'] += [b117]
-    # Add B.1.1351 strain from Janury 2021
-    #b1351 = cv.variant('b1351', days=np.arange(sim.day('2021-01-10'), sim.day('2021-01-20')), n_imports=1500)
-    #b1351.p['rel_beta']        = 1.0
-    #b1351.p['rel_severe_prob'] = 1.0
-    #b1351.p['rel_crit_prob']   = 1.0
-    #b1351.p['rel_death_prob']  = 1.0
-    #sim['variants'] += [b1351]
-    # Add B.X.XXX strain starting middle of March
+    # Add Delta strain starting middle of April
     b16172 = cv.variant('b16172', days=np.arange(sim.day('2021-04-15'), sim.day('2021-04-20')), n_imports=4000)
     b16172.p['rel_beta']         = 3.1
     #b16172.p['rel_symp_prob']    = 0.9
     b16172.p['rel_severe_prob']  = 0.2
     #b16172.p['rel_crit_prob']    = 0.1
-    b16172.p['rel_death_prob']   = 1.1
+    #b16172.p['rel_death_prob']   = 1.1
     #b16172.p['rel_severe_prob'] = 0.7
     #b16172.p['rel_crit_prob']   = 1.0
     #b16172.p['rel_death_prob']  = 0.7
@@ -447,7 +442,6 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
     s_prob_oct21 =0.07769
     s_prob_nov21 =0.11769
     s_prob_dec21 =0.09769
-    
 
     #0.114=70%; 0.149=80%; 0.205=90%
 
@@ -528,16 +522,41 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
         cv.dynamic_pars({'iso_factor': {'days': tti_day_july21, 'vals': iso_vals8}}),
         cv.dynamic_pars({'iso_factor': {'days': tti_day_august21, 'vals': iso_vals9}}),
         cv.dynamic_pars({'iso_factor': {'days': tti_day_sep21, 'vals': iso_vals10}})]
-        #cv.dynamic_pars({'rel_crit_prob': {'days': tti_day_vac, 'vals': 1.2}}),
+    
+    def change_hosp(sim):
+        if sim.t == tti_day_dec21:
+            sim['dur']['sev2rec']['par1'] = 7
+
+        interventions += [change_hosp]
+        #cv.dynamic_pars({['dur'],['sev2rec'],['par1']: {'days': tti_day_august21, 'vals': 7}})]
+        #pars['dur']['sev2rec']  = dict(dist='lognormal_int', par1=8.1, par2=6.3) # Duration for people with severe symptoms to recover, 24.7 days total; see Verity et al., https://www.thelancet.com/journals/laninf/article/PIIS1473-3099(20)30243-7/fulltext; 18.1 days = 24.7 onset-to-recovery - 6.6 sym2sev; 6.3 = 0.35 coefficient of variation * 18.1; see also https://doi.org/10.1017/S0950268820001259 (22 days) and https://doi.org/10.3390/ijerph17207560 (3-10 days)
+    #pars['dur']['crit2rec'] = dict(dist='lognormal_int', par1=8.1, par2=6.3) # Duration for people with critical symptoms to recover; as above (Verity et al.)
+          
+    #cv.dynamic_pars({'rel_crit_prob': {'days': tti_day_vac, 'vals': 1.2}}),
         #cv.dynamic_pars({'rel_severe_prob': {'days': tti_day_dec, 'vals': 0.7}}),
         #cv.dynamic_pars({'rel_death_prob': {'days': tti_day_dec, 'vals': 1.2}})]
         #cv.vaccine(days=[0,14], rel_sus=0.4, rel_symp=0.2, cumulative=[0.7, 0.3])]
     
+    # Define the vaccine
+    #vaccine = az_vaccine if (age > 40 and age < 65) else pfizer_vaccine
+    #vx = cv.simple_vaccine('days'= vac_dec, rel_sus=0.8, rel_symp=0.06, subtarget=vaccinate_by_age)
+
+    #def vaccinate_by_age(sim):
+    #    young  = cv.true(sim.people.age < 18) # cv.true() returns indices of people matching this condition, i.e. people under 50
+    #    middle = cv.true((sim.people.age >= 18) * (sim.people.age < 50)) # Multiplication means "and" here
+    #    old    = cv.true(sim.people.age > 50)
+    #    inds = sim.people.uid # Everyone in the population -- equivalent to np.arange(len(sim.people))
+    #    vals = np.ones(len(sim.people)) # Create the array
+    #    vals[young] = 0.1 # 10% probability for people <50
+    #    vals[middle] = 0.6 # 50% probability for people 50-75
+    #    vals[old] = 0.9 # 90% probability for people >75
+    #    output = dict(inds=inds, vals=vals)
+    #    return output    
     dose_pars = cvp.get_vaccine_dose_pars()['az']
     dose_pars['interval'] = 7 * 8
     variant_pars = cvp.get_vaccine_variant_pars()['az']
     az_vaccine = sc.mergedicts({'label':'az_uk'}, sc.mergedicts(dose_pars, variant_pars)) 
-
+    
     dose_pars = cvp.get_vaccine_dose_pars()['pfizer']
     dose_pars['interval'] = 7 * 8
     variant_pars = cvp.get_vaccine_variant_pars()['pfizer']
@@ -550,19 +569,22 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
         vx_start_day = sim.day(vx_rollout[age]['start_day'])
         vx_end_day = vx_start_day + vx_duration
         days = np.arange(vx_start_day, vx_end_day)
-        #vx = cv.vaccinate(vaccine=vaccine, subtarget=subtarget, days=days)
+    #    vx = cv.vaccinate(vaccine=vaccine, subtarget=subtarget, days=days)
         vx = cv.vaccinate_prob(vaccine=vaccine, days=days, prob=0.01)
+    #    vx = cv.vaccinate(vaccine=vaccine, days=days, rel_sus=0.6, rel_symp=0.8, subtarget=subtarget)
+
         interventions += [vx]
 
-    analyzers = []
+    #analyzers = []
 
     # add daily age stats analyzer
-    analyzers += [cv.daily_age_stats(edges= [0, 30,  65,  80, 100])]
+    #analyzers += [cv.daily_age_stats(edges= [0, 30,  65,  80, 100])]
     #analyzers +=  [cv.age_histogram(datafile='uk_stats_by_age.xlsx', edges=np.concatenate([np.linspace(0, 90, 19),np.array([100])]))]
 
 
 # Finally, update the parameters
-    sim.update_pars(interventions=interventions, analyzers=analyzers)
+    sim.update_pars(interventions=interventions)
+    #, analyzers=analyzers)
 
     # Change death and critical probabilities
 #    interventions += [cv.dynamic_pars({'rel_death_prob':{'days':sim.day('2020-07-01'), 'vals':0.6}})]
@@ -589,7 +611,7 @@ if __name__ == '__main__':
     if whattorun=='quickfit':
         s0 = make_sim(seed=1, beta=0.0079, end_day='2022-01-15', verbose=0.1, vx_scenario=1)
         sims = []
-        for seed in range(50):
+        for seed in range(10):
             sim = s0.copy()
             sim['rand_seed'] = seed
             sim.set_seed()
@@ -603,11 +625,11 @@ if __name__ == '__main__':
         if save_sim:
                     #msim.reduce()
                     msim.reduce(quantiles=[0.10, 0.90])
-                    msim.save(f'{resfolder}/uk_sim_test_vx1.obj',keep_people=True)
+                    msim.save(f'{resfolder}/uk_sim_test_01Dec_omic.obj',keep_people=True)
         if do_plot:
-            msim.plot(to_plot=to_plot, do_save=True, do_show=False, fig_path='England_test_vx1.png',
+            msim.plot(to_plot=to_plot, do_save=True, do_show=False, fig_path='England_test_01Dec_omic.png',
                       legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=75, n_cols=2)
-            msim.plot('variants', do_save=True, do_show=False, fig_path='uk_strain_test_vx1.png')
+            msim.plot('variants', do_save=True, do_show=False, fig_path='uk_strain_test_01Dec_omic.png')
     # Run scenarios
     elif whattorun=='scens':
 
