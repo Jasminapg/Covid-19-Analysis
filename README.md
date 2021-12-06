@@ -3,8 +3,7 @@ Modelling the transmisson and spread of Covid-19 in the UK
 
 Background
 =============
-This repository contains a collection of code and data used to model the transmission and spread of COVID-19 in the UK, using the Covasim model.
-The UK Covasim model has been used for numerous analyses to inform policy decisions in the UK:
+This repository contains a collection of code and data used to model the transmission and spread of COVID-19 in the UK, using the Covasim model. The UK Covasim model has been used for numerous analyses to inform policy decisions in the UK:
 
 1. **Determining the optimal strategy for reopening schools, the impact of test and trace interventions, and the risk of occurrence of a second COVID-19 epidemic wave in the UK: a modelling study**. Panovska-Griffiths J, Kerr CC, Stuart RM, Mistry D, Klein DJ, Viner R, Bonnell C (2020-08-03). *Lancet Child and Adolescent Health* S2352-4642(20) 30250-9. doi: https://doi.org/10.1016/S2352-4642(20)30250-9
 
@@ -45,4 +44,4 @@ The scientific paper describing Covasim is available at http://paper.covasim.org
 
 The Covasim webapp is available at http://app.covasim.org, and the repository for it is available `here <https://github.com/institutefordiseasemodeling/covasim_webapp>`__.
 
-Covasim was developed by the `Institute for Disease Modeling <https://idmod.org/>`__, with additional contributions from the `University of Copenhagen <https://www.math.ku.dk/english>`__, the `Burnet Institute <https://www.burnet.edu.au/>`__, `GitHub <https://github.com/>`__, and `Microsoft <https://www.microsoft.com/en-us/ai/ai-for-health-covid-data>`__.
+Covasim was developed by the Institute for Disease Modeling <https://idmod.org/>, with additional contributions from the University of Copenhagen <https://www.math.ku.dk/english>, the Burnet Institute <https://www.burnet.edu.au/>, GitHub <https://github.com/>, and Microsoft <https://www.microsoft.com/en-us/ai/ai-for-health-covid-data>.
