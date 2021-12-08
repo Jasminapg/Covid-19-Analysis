@@ -572,6 +572,9 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
     variant_pars = cvp.get_vaccine_variant_pars()['pfizer']
     pfizer_vaccine = sc.mergedicts({'label':'pfizer_uk'}, sc.mergedicts(dose_pars, variant_pars))
 
+    # Add age-based vax rollout
+    vx_75 = cv.vaccinate_prob(vaccine=pfizer_vaccine, days=[100,190], prob=0.01)
+
     # Loop over vaccination in different ages
     for age in vx_ages:
         vaccine = az_vaccine if (age > 40 and age < 65) else pfizer_vaccine
