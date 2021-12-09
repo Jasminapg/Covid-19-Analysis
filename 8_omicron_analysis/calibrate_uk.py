@@ -399,11 +399,14 @@ if __name__ == '__main__':
         fully_vaccinated = (n_doses == 2).sum(axis=1)
         first_dose = (n_doses == 1).sum(axis=1)
 #        boosted = (n_doses > 2).sum(axis=1)
-        pl.stackplot(sim.tvec, first_dose, fully_vaccinated, boosted)
+        pl.stackplot(sim.tvec, first_dose, fully_vaccinated)#, boosted)
         pl.legend(['First dose', 'Fully vaccinated']) #, 'Boosted']);
-        pl.show()
+        pl.savefig(figfolder+'/doses.png')
 
         daily_age = sim.get_analyzer(1)
-        daily_age.plot(total=True)
+        daily_age.plot(do_show=False)
+        pl.savefig(figfolder+'/age_stats.png')
+        daily_age.plot(total=True, do_show=False)
+        pl.savefig(figfolder+'/age_stats_total.png')
 
 
