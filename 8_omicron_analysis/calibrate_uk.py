@@ -36,6 +36,7 @@ to_plot = sc.objdict({
 # Filepaths
 data_path = 'England_Covid_cases_Nov272021.xlsx'
 resfolder = 'results'
+figfolder = 'figs'
 
 # Important dates
 start_day = '2020-01-20'
@@ -47,8 +48,8 @@ data_end  = '2021-10-31' # Final date for calibration -- set this to a date befo
 ########################################################################
 
 vx_rollout = {
-    75: dict(start_age=75, end_age=100, start_day='2020-01-28', final_uptake=0.95, days_to_reach=14), # TODO CHANGE BACK DATES
-    60: dict(start_age=60, end_age=75,  start_day='2020-01-20', final_uptake=0.95, days_to_reach=14), # TODO CHANGE BACK DATES
+    75: dict(start_age=75, end_age=100, start_day='2020-12-20', final_uptake=0.95, days_to_reach=14),
+    60: dict(start_age=60, end_age=75,  start_day='2021-01-28', final_uptake=0.95, days_to_reach=14),
     50: dict(start_age=50, end_age=60,  start_day='2021-02-10', final_uptake=0.95, days_to_reach=14),
     45: dict(start_age=45, end_age=50,  start_day='2021-03-20', final_uptake=0.90, days_to_reach=14),
     40: dict(start_age=40, end_age=45,  start_day='2021-04-10', final_uptake=0.90, days_to_reach=14),
@@ -60,12 +61,14 @@ vx_rollout = {
 }
 # For simplicity, we assume linear scale-up for each age group, from 0% vax coverage to the final
 # uptake value over the duration of the vaccination campaign
+def set_subtargets(vx_phase):
+  return lambda sim: cv.true((sim.people.age >= vx_phase['start_age']) * (sim.people.age < vx_phase['end_age']))
+
 subtarget_dict = {}
 for age, vx_phase in vx_rollout.items():
     vx_phase['daily_prob'] = vx_phase['final_uptake'] / vx_phase['days_to_reach']
-    subtarget_dict[age] = {'inds': lambda sim: cv.true((sim.people.age >= vx_phase['start_age']) * (sim.people.age < vx_phase['end_age'])),
+    subtarget_dict[age] = {'inds': set_subtargets(vx_phase),
                            'vals': vx_phase['daily_prob']}
-
 
 ########################################################################
 # Create the baseline simulation
@@ -103,7 +106,6 @@ def make_sim(seed, beta, verbose=0.1):
     )
 
     sim = cv.Sim(pars=pars, datafile=data_path, location='uk')
-    #sim.initialize() # Temporary, so we can get people
 
    # ADD BETA INTERVENTIONS
     #sbv is transmission in schools and assumed to be 63%=0.7*90% assuming that masks are used and redyce it by 30%
@@ -340,7 +342,7 @@ def make_sim(seed, beta, verbose=0.1):
 
     interventions += [change_hosp]
 
-    # Define the vaccine
+    # Define the vaccines
     dose_pars = cvp.get_vaccine_dose_pars()['az']
     dose_pars['interval'] = 7 * 8
     variant_pars = cvp.get_vaccine_variant_pars()['az']
@@ -361,14 +363,10 @@ def make_sim(seed, beta, verbose=0.1):
         vx = cv.vaccinate_prob(vaccine=vaccine, days=days, subtarget=subtarget_dict[age], label=f'Vaccinate {age}')
         interventions += [vx]
 
-    analyzers = [cv.nab_histogram()]
-
     # Finally, update the parameters
-    sim.update_pars(interventions=interventions, variants=variants, analyzers=analyzers)
+    sim.update_pars(interventions=interventions, variants=variants)
     for intervention in sim['interventions']:
         intervention.do_plot = False
-
-    sim.initialize()
 
     return sim
 
@@ -378,10 +376,34 @@ def make_sim(seed, beta, verbose=0.1):
 ########################################################################
 if __name__ == '__main__':
 
+    # Make sim
     sim = make_sim(seed=1, beta=0.0079)
+
+    # Add analyzers
+    n_doses = []
+    dose_analyzer   = lambda sim: n_doses.append(sim.people.doses.copy())
+    age_stats       = cv.daily_age_stats(states=['vaccinated', 'exposed', 'severe', 'dead'])
+    analyzers       = [dose_analyzer, age_stats]
+    sim.update_pars(analyzers=analyzers)
+    sim.initialize()
     sim.run()
+
+    # Do plotting
     if do_plot:
-        sim.plot(to_plot=to_plot, do_save=True, do_show=False, fig_path='England_test_01Dec_omic.png',
+        sim.plot(to_plot=to_plot, do_save=True, do_show=False, fig_path=figfolder+'/England_test_01Dec_omic.png',
                   legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=75, n_cols=2)
-        sim.plot('variants', do_save=True, do_show=False, fig_path='uk_strain_test_01Dec_omic.png')
+        sim.plot('variants', do_save=True, do_show=False, fig_path=figfolder+'/uk_strain_test_01Dec_omic.png')
+
+        pl.figure()
+        n_doses = np.array(n_doses)
+        fully_vaccinated = (n_doses == 2).sum(axis=1)
+        first_dose = (n_doses == 1).sum(axis=1)
+#        boosted = (n_doses > 2).sum(axis=1)
+        pl.stackplot(sim.tvec, first_dose, fully_vaccinated, boosted)
+        pl.legend(['First dose', 'Fully vaccinated']) #, 'Boosted']);
+        pl.show()
+
+        daily_age = sim.get_analyzer(1)
+        daily_age.plot(total=True)
+
 
