@@ -1,6 +1,6 @@
 import sciris as sc
 import covasim as cv
-import covasim.parameters as cvp
+import covasim.parameters as cvpar
 import pylab as pl
 import numpy as np
  
@@ -42,6 +42,8 @@ figfolder = 'figs'
 start_day = '2020-01-20'
 data_end  = '2021-10-31' # Final date for calibration -- set this to a date before boosters started
 
+seed = 1
+beta = 0.0079
 
 ########################################################################
 # Define the vaccination rollout
@@ -339,18 +341,17 @@ def make_sim(seed, beta, verbose=0.1):
     def change_hosp(sim):
         if sim.t == tti_day_dec21:
             sim['dur']['sev2rec']['par1'] = 7
-
     interventions += [change_hosp]
 
     # Define the vaccines
-    dose_pars = cvp.get_vaccine_dose_pars()['az']
+    dose_pars = cvpar.get_vaccine_dose_pars()['az']
     dose_pars['interval'] = 7 * 8
-    variant_pars = cvp.get_vaccine_variant_pars()['az']
+    variant_pars = cvpar.get_vaccine_variant_pars()['az']
     az_vaccine = sc.mergedicts({'label':'az_uk'}, sc.mergedicts(dose_pars, variant_pars)) 
     
-    dose_pars = cvp.get_vaccine_dose_pars()['pfizer']
+    dose_pars = cvpar.get_vaccine_dose_pars()['pfizer']
     dose_pars['interval'] = 7 * 8
-    variant_pars = cvp.get_vaccine_variant_pars()['pfizer']
+    variant_pars = cvpar.get_vaccine_variant_pars()['pfizer']
     pfizer_vaccine = sc.mergedicts({'label':'pfizer_uk'}, sc.mergedicts(dose_pars, variant_pars))
 
     # Loop over vaccination in different ages
@@ -359,7 +360,6 @@ def make_sim(seed, beta, verbose=0.1):
         vx_start_day = sim.day(vx_phase['start_day'])
         vx_end_day = vx_start_day + vx_phase['days_to_reach']
         days = np.arange(vx_start_day, vx_end_day)
-
         vx = cv.vaccinate_prob(vaccine=vaccine, days=days, subtarget=subtarget_dict[age], label=f'Vaccinate {age}')
         interventions += [vx]
 
@@ -377,7 +377,7 @@ def make_sim(seed, beta, verbose=0.1):
 if __name__ == '__main__':
 
     # Make sim
-    sim = make_sim(seed=1, beta=0.0079)
+    sim = make_sim(seed,beta)
 
     # Add analyzers
     n_doses = []
