@@ -89,7 +89,7 @@ def add_scens(seed=None, rel_beta=None, rel_imm=None, rel_sev=None, meta=None):
 def run_sim(sim, do_shrink=True):
     ''' Run a simulation '''
 
-    print(f'Running sim {sim.meta.count:5g} of {sim.meta.n_sims:5g} {str(sim.meta.vals.values()):40s} -- {loadstr}')
+    print(f'Running sim {sim.meta.count:5g} of {sim.meta.n_sims:5g} {str(sim.meta.vals.values()):40s}')
     sim.run(until=day_before_scens) # Run the partial sim
     sim.run() # Run the rest of the sim
     if do_shrink: sim.shrink()
@@ -162,15 +162,4 @@ if __name__ == '__main__':
     for msim in all_msims:  # Unflatten array
         draw = msim.meta.inds
         msims[draw] = msim
-
-    p = sweep_params()
-    sim = add_scens(sim, p)
-
-    # Add future scenarios
-    n_doses = []
-    dose_analyzer   = lambda sim: n_doses.append(sim.people.doses.copy())
-    age_stats       = cv.daily_age_stats(states=['vaccinated', 'exposed', 'severe', 'dead'])
-    analyzers       = [dose_analyzer, age_stats]
-    # sim.update_pars(analyzers=analyzers)
-    sim.run()
 
