@@ -347,11 +347,13 @@ def make_sim(seed, beta, verbose=0.1):
     dose_pars = cvpar.get_vaccine_dose_pars()['az']
     dose_pars['interval'] = 7 * 8
     variant_pars = cvpar.get_vaccine_variant_pars()['az']
+    variant_pars['omicron'] = 1/7 # PLACEHOLDER
     az_vaccine = sc.mergedicts({'label':'az_uk'}, sc.mergedicts(dose_pars, variant_pars)) 
     
     dose_pars = cvpar.get_vaccine_dose_pars()['pfizer']
     dose_pars['interval'] = 7 * 8
     variant_pars = cvpar.get_vaccine_variant_pars()['pfizer']
+    variant_pars['omicron'] = 1/7 # PLACEHOLDER
     pfizer_vaccine = sc.mergedicts({'label':'pfizer_uk'}, sc.mergedicts(dose_pars, variant_pars))
 
     # Loop over vaccination in different ages

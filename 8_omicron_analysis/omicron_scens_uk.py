@@ -7,8 +7,13 @@ import calibrate_uk as ca
 
 
 # Settings
-day_before_scens = ca.data_end
-debug = 1
+date_before_scens = ca.data_end
+day_before_scens  = cv.day(date_before_scens, start_date=ca.start_day)
+scen_end_date     = '2022-03-01'
+debug = 0
+heatmap_file = 'heatmap_data.obj'
+verbose = -1
+seed = 1
 
 # Define sweep parameters
 def sweep_params():
@@ -23,7 +28,8 @@ def add_scens(seed=None, rel_beta=None, rel_imm=None, rel_sev=None, meta=None):
     ''' Add future scenarios to the sim '''
 
     # Get the historical calibrated sim
-    sim = ca.make_sim(seed=seed, beta=ca.beta)
+    sim = ca.make_sim(seed=seed, beta=ca.beta, verbose=verbose)
+    sim['end_day'] = scen_end_date
 
     interventions   = sc.dcp(sim['interventions'])
     variants        = sc.dcp(sim['variants'])
@@ -39,23 +45,29 @@ def add_scens(seed=None, rel_beta=None, rel_imm=None, rel_sev=None, meta=None):
     c_beta = cv.change_beta(days=beta_days, changes=[c[3] for c in beta_dict.values()], layers='c')
     interventions += [h_beta, w_beta, s_beta, c_beta]
 
-    # Future vaccinations
-    default_nab_eff = sim['nab_eff']
+    # Define booster as a custom vaccination
     booster = dict(
-        nab_eff=sc.dcp(default_nab_eff),
+        nab_eff=sc.dcp(sim['nab_eff']),
         nab_init=None,
         nab_boost=3,
         doses=1,
         interval=None,
+        wild=1.0,
+        alpha=1 / 2.3,
+        beta=1 / 9,
+        gamma=1 / 2.9,
+        delta=1 / 6.2,
+        omicron=1 / 7  # PLACEHOLDER
     )
+
     booster_target = {'inds': lambda sim: cv.true(sim.people.doses != 2),
                       'vals': 0}  # Only give boosters to people who have had 2 doses
 
     def num_boosters(sim):
-        if sim.t < sim.day(650):    return 0
-        else:                       return 250_000  # Just use a placeholder value
+        if sim.t < sim.day(day_before_scens):   return 0
+        else:                                   return 250_000  # Just use a placeholder value
 
-    booster = cv.vaccinate_num(vaccine=booster, sequence='age', subtarget=booster_target, num_doses=num_boosters, booster=True)
+    booster = cv.vaccinate_num(vaccine=booster, label='booster', sequence='age', subtarget=booster_target, num_doses=num_boosters, booster=True)
     interventions += [booster]
 
     # Omicron variant definition
@@ -73,6 +85,7 @@ def add_scens(seed=None, rel_beta=None, rel_imm=None, rel_sev=None, meta=None):
     beta_imm = cvpar.get_cross_immunity()['beta'] # Assume that omicron is like beta
     variant_mapping = sim['variant_map']
 
+    # Now vary omicron's immunity
     for i in range(len(immunity)):
         if i != len(immunity) - 1:
             immunity[len(immunity) - 1, i] = beta_imm[variant_mapping[i]] * rel_imm
@@ -100,15 +113,13 @@ def run_sim(sim, do_shrink=True):
 def make_msims(sims):
     ''' Take a slice of sims and turn it into a multisim '''
     msim = cv.MultiSim(sims)
-    msim.reduce(use_mean=use_mean)
-    i_sc, i_fst, i_fte, i_s = sims[0].meta.inds
+    msim.reduce(use_mean=True)
+    draw, seed = sims[0].meta.inds
     for s,sim in enumerate(sims): # Check that everything except seed matches
-        assert i_sc == sim.meta.inds[0]
-        assert i_fst == sim.meta.inds[1]
-        assert i_fte == sim.meta.inds[2]
-        assert (s==0) or i_s != sim.meta.inds[3]
+        assert draw == sim.meta.inds[0]
+        assert (s==0) or seed != sim.meta.inds[1]
     msim.meta = sc.objdict()
-    msim.meta.inds = [i_sc, i_fst, i_fte]
+    msim.meta.inds = [draw]
     msim.meta.vals = sc.dcp(sims[0].meta.vals)
     msim.meta.vals.pop('seed')
     print(f'Processing multisim {msim.meta.vals.values()}...')
@@ -121,8 +132,12 @@ def make_msims(sims):
 ########################################################################
 if __name__ == '__main__':
 
-    n_seeds = [1, 1][debug]
-    n_draws = [2000, 10][debug]
+    # p = sweep_params()
+    # sim = add_scens(seed=0, **p)
+    # sim.run()
+
+    n_seeds = [5, 1][debug]
+    n_draws = [2000, 4][debug]
     n_sims = n_seeds * n_draws
     count = 0
     ikw = []
@@ -162,4 +177,22 @@ if __name__ == '__main__':
     for msim in all_msims:  # Unflatten array
         draw = msim.meta.inds
         msims[draw] = msim
+
+    # Do processing and store results
+    variables = ['cum_infections', 'cum_severe', 'cum_deaths']
+    d = sc.objdict()
+    d.rel_beta = []
+    d.rel_imm = []
+    d.rel_sev = []
+    for v in variables: d[v] = []
+    for msim in all_msims:
+        d.rel_beta.append(msim.meta.vals['rel_beta'])
+        d.rel_imm.append(msim.meta.vals['rel_imm'])
+        d.rel_sev.append(msim.meta.vals['rel_sev'])
+        for v in variables:
+            d[v].append(msim.results[v].values[-1]-msim.results[v].values[day_before_scens])
+        sc.saveobj(heatmap_file, d)
+    sc.toc(T)
+
+
 
