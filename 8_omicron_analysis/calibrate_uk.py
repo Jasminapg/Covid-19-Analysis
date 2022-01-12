@@ -581,7 +581,7 @@ if __name__ == '__main__':
 
     elif whattorun=='dec_sweeps':
         n_seeds = [5, 1][debug]
-        n_draws = [2000, 4][debug]
+        n_draws = [500, 4][debug]
         n_sims = n_seeds * n_draws
         count = 0
         ikw = []
