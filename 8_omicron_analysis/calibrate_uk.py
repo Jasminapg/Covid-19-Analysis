@@ -39,7 +39,7 @@ settings = {'nov_quickfit': {'verbose':0.1,  'end_day': '2021-11-15', 'data_path
             }
 
 seed    = 1
-debug   = 1
+debug   = 0
 start_day = '2020-01-20'
 date_before_scens = settings['nov_fullfit']['end_day']
 day_before_scens  = cv.day(date_before_scens, start_date=start_day)
