@@ -1,6 +1,6 @@
 import sciris as sc
 import covasim as cv
-import covasim.parameters as cvpar
+import covasim.parameters as cvp
 import pylab as pl
 import numpy as np
  
@@ -12,14 +12,38 @@ import numpy as np
 cv.check_version('>=3.1.0')
 cv.git_info('covasim_version.json')
 
-# Saving and plotting settings
-do_plot = 1
-do_save = 1
-save_sim = 1
-plot_hist = 0 # Whether to plot an age histogram
-do_show = 0
-verbose = 1
+# Filepaths
+data_path1 = 'England_Covid_cases_Nov272021.xlsx'
+data_path2 = 'England_Covid_cases_Dec312021.xlsx'
+resfolder = 'results'
+figfolder = 'figs'
+heatmap_file = 'heatmap_data.obj'
+
+
+# Define what to run
+whattorun = ['nov_quickfit',    # STEP 1: run a quick fit to make sure everything works
+             'nov_fullfit',     # STEP 2: run the model until November 15 to demonstrate the fit to historical data pre-omicron
+             'dec_sweeps',      # STEP 3: run sweeps over properties of omicron. CAUTION: slow to run, needs VMs
+             'dec_quickfit',    # STEP 4: using known properites of omicron, run a quick fit to december data to make sure everything works
+             'dec_fullfit',     # STEP 5: run the model until December 31 to demonstrate the fit to data after omicron
+             'dec_project'      # STEP 6: project forward over school reopening scenarios.
+             ][2]
+
+# Saving and plotting settings depend on what you're running
+settings = {'nov_quickfit': {'verbose':0.1,  'end_day': '2021-11-15', 'data_path': data_path1},
+            'nov_fullfit':  {'verbose':0.01, 'end_day': '2021-11-15', 'data_path': data_path1},
+            'dec_sweeps':   {'verbose':-1,   'end_day': '2021-12-31', 'data_path': None},
+            'dec_quickfit': {'verbose':0.1,  'end_day': '2021-12-31', 'data_path': data_path2},
+            'dec_fullfit':  {'verbose':0.01, 'end_day': '2021-12-31', 'data_path': data_path2},
+            'dec_project':  {'verbose':0.01, 'end_day': '2022-03-10', 'data_path': data_path2},
+            }
+
 seed    = 1
+debug   = 1
+start_day = '2020-01-20'
+date_before_scens = settings['nov_fullfit']['end_day']
+day_before_scens  = cv.day(date_before_scens, start_date=start_day)
+
 to_plot = sc.objdict({
     'Daily infections': ['new_diagnoses'],
     'Daily hospitalisations': ['new_severe'],
@@ -33,78 +57,92 @@ to_plot = sc.objdict({
     'Vaccinated': ['cum_vaccinated'],
 })
 
-# Filepaths
-data_path = 'England_Covid_cases_Nov272021.xlsx'
-resfolder = 'results'
-figfolder = 'figs'
 
-# Important dates
-start_day = '2020-01-20'
-data_end  = '2021-10-31' # Final date for calibration -- set this to a date before boosters started
-
-seed = 1
-beta = 0.0079
 
 ########################################################################
 # Define the vaccination rollout
 ########################################################################
-
+# fitting data vaccine rollout in England using info from
+# https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2021/07/COVID-19-weekly-announced-vaccinations-01-July-2021.pdf
+# The arguments "final_uptake" and "days_to_reach" can be used to define a scale-up function over the
+# duration of the vaccination campaign. However, these are currently not used, and a daily probability
+# is used instead.
 vx_rollout = {
-    75: dict(start_age=75, end_age=100, start_day='2020-12-20', final_uptake=0.95, days_to_reach=14),
-    60: dict(start_age=60, end_age=75,  start_day='2021-01-28', final_uptake=0.95, days_to_reach=14),
-    50: dict(start_age=50, end_age=60,  start_day='2021-02-10', final_uptake=0.95, days_to_reach=14),
-    45: dict(start_age=45, end_age=50,  start_day='2021-03-20', final_uptake=0.90, days_to_reach=14),
-    40: dict(start_age=40, end_age=45,  start_day='2021-04-10', final_uptake=0.90, days_to_reach=14),
-    30: dict(start_age=30, end_age=40,  start_day='2021-05-10', final_uptake=0.80, days_to_reach=14),
-    25: dict(start_age=25, end_age=30,  start_day='2021-06-10', final_uptake=0.80, days_to_reach=14),
-    18: dict(start_age=18, end_age=25,  start_day='2021-06-30', final_uptake=0.80, days_to_reach=14),
-    16: dict(start_age=16, end_age=18,  start_day='2021-08-10', final_uptake=0.75, days_to_reach=14),
-    12: dict(start_age=12, end_age=15,  start_day='2021-09-01', final_uptake=0.70, days_to_reach=14),
+    90: dict(start_age=90, end_age=100, start_day='2020-12-08', final_uptake=0.95, days_to_reach=90),
+    85: dict(start_age=85, end_age=89, start_day='2020-12-10', final_uptake=0.95, days_to_reach=90),
+    80: dict(start_age=80, end_age=84, start_day='2020-12-16', final_uptake=0.95, days_to_reach=90),
+    75: dict(start_age=75, end_age=79, start_day='2021-01-11', final_uptake=0.95, days_to_reach=90),
+    70: dict(start_age=70, end_age=74, start_day='2021-01-18', final_uptake=0.95, days_to_reach=90),
+    65: dict(start_age=65, end_age=69, start_day='2021-02-15', final_uptake=0.90, days_to_reach=90),
+    60: dict(start_age=60, end_age=64, start_day='2021-02-22', final_uptake=0.90, days_to_reach=90),
+    55: dict(start_age=55, end_age=60, start_day='2021-03-01', final_uptake=0.88, days_to_reach=90),
+    50: dict(start_age=50, end_age=59, start_day='2021-03-05', final_uptake=0.85, days_to_reach=60),
+    45: dict(start_age=45, end_age=49, start_day='2021-03-13', final_uptake=0.80, days_to_reach=60),
+    40: dict(start_age=40, end_age=44, start_day='2021-04-12', final_uptake=0.75, days_to_reach=60),
+    35: dict(start_age=35, end_age=39, start_day='2021-05-03', final_uptake=0.80, days_to_reach=60),
+    30: dict(start_age=30, end_age=34, start_day='2021-05-26', final_uptake=0.80, days_to_reach=60),
+    25: dict(start_age=25, end_age=29, start_day='2021-06-08', final_uptake=0.80, days_to_reach=60),
+    18: dict(start_age=18, end_age=24, start_day='2021-05-18', final_uptake=0.60, days_to_reach=90),
+    16: dict(start_age=16, end_age=17, start_day='2021-08-16', final_uptake=0.40, days_to_reach=90),
+    12: dict(start_age=12, end_age=15, start_day='2021-10-22', final_uptake=0.40, days_to_reach=90),
 }
-# For simplicity, we assume linear scale-up for each age group, from 0% vax coverage to the final
-# uptake value over the duration of the vaccination campaign
+
 def set_subtargets(vx_phase):
   return lambda sim: cv.true((sim.people.age >= vx_phase['start_age']) * (sim.people.age < vx_phase['end_age']))
 
 subtarget_dict = {}
 for age, vx_phase in vx_rollout.items():
-    vx_phase['daily_prob'] = vx_phase['final_uptake'] / vx_phase['days_to_reach']
+    vx_phase['daily_prob'] = 0.02
+    # vx_phase['final_uptake'] / vx_phase['days_to_reach']
     subtarget_dict[age] = {'inds': set_subtargets(vx_phase),
                            'vals': vx_phase['daily_prob']}
+
+########################################################################
+# Define omicron parameters and ranges
+########################################################################
+# Estimates of omicron pars as of Dec 31
+om_pars = sc.objdict()
+om_pars.rel_beta=6.8
+om_pars.rel_severe_prob=0.8
+om_pars.rel_imm=0.2
+
+# Omicron sweep parameters
+def sweep_om_pars():
+    om_pars = sc.objdict()
+    om_pars.rel_severe_prob = np.random.choice([0.5, 1, 1.5])
+    om_pars.rel_beta = np.random.uniform(2, 4)  # changes the relative transmissibility of omicron
+    om_pars.rel_imm = np.random.uniform(0.1, 0.4)  # changes the relative immunity of omicron
+    return om_pars
+
 
 ########################################################################
 # Create the baseline simulation
 ########################################################################
  
-def make_sim(seed, beta, verbose=0.1):
+def make_sim(seed, beta=0.0079, rel_beta=None, rel_severe_prob=None, rel_imm=None,
+             verbose=None, end_day=None, data_path=None, meta=None):
+
+    # Rename omicron parameters
+    om_rel_beta = rel_beta
+    om_rel_sev  = rel_severe_prob
+    om_az_eff = om_pf_eff = om_boost_eff = om_rel_imm = rel_imm
 
     # Set the parameters
-    #total_pop    = 67.86e6 # UK population size
-    total_pop    = 55.98e6 # UK population size
-    pop_size     = 100e3 # Actual simulated population
-    pop_scale    = int(total_pop/pop_size)
-    pop_type     = 'hybrid'
-    pop_infected = 1000
-    beta         = beta
-    asymp_factor = 2
-    contacts     = {'h':3.0, 's':20, 'w':20, 'c':20}
-    beta_layer   = {'h':3.0, 's':1.0, 'w':0.6, 'c':0.3}
-    end_day = data_end
-
     pars = sc.objdict(
-        use_waning   = True,
-        pop_size     = pop_size,
-        pop_infected = pop_infected,
-        pop_scale    = pop_scale,
-        pop_type     = pop_type,
-        start_day    = start_day,
-        end_day      = end_day,
-        beta         = beta,
-        asymp_factor = asymp_factor,
-        contacts     = contacts,
-        rescale      = True,
-        rand_seed    = seed,
-        verbose      = verbose,
+        scaled_pop      = 55.98e6,  # UK population size
+        n_agents        = 100e3, # Actual simulated population
+        pop_type        = 'hybrid',
+        pop_infected    = 1000,
+        beta            = beta,
+        use_waning      = True,
+        start_day       = start_day,
+        end_day         = end_day,
+        asymp_factor    = 2,
+        contacts        = {'h':3.0, 's':20, 'w':20, 'c':20},
+#        beta_layer   = {'h':3.0, 's':1.0, 'w':1.0, 'c':1.0}
+        rescale         = True,
+        rand_seed       = seed,
+        verbose         = verbose,
     )
 
     sim = cv.Sim(pars=pars, datafile=data_path, location='uk')
@@ -181,27 +219,63 @@ def make_sim(seed, beta, verbose=0.1):
                            #large surge in cases from middle of June
                            #need these social mixing values to match the data
                            ###OPTION 1=sociaty reopens but big isolation in schools
-                           '2021-06-19': [1.05, 0.63, 0.30, 0.80],
-                           '2021-06-21': [1.05, 0.63, 0.30, 0.80],
+                           '2021-06-19': [1.05, 0.63, 0.30, 0.70],
+                           '2021-06-21': [1.05, 0.63, 0.30, 0.70],
                            #to fit data we need to increase testing and mixing from 22/06/2021                          
-                           '2021-06-28': [1.05, 0.63, 0.30, 0.80],
-                           '2021-07-05': [1.05, 0.63, 0.30, 0.80],
-                           '2021-07-12': [1.05, 0.63, 0.30, 0.80],
+                           '2021-06-28': [1.05, 0.63, 0.30, 0.70],
+                           '2021-07-05': [1.05, 0.63, 0.30, 0.70],
+                           '2021-07-12': [1.05, 0.63, 0.30, 0.70],
                            #cases start to drop from middle of July
-                           '2021-07-19': [1.05, 0.00, 0.30, 0.80],
+                           '2021-07-19': [1.05, 0.00, 0.30, 0.70],
                            #easing of socal distancing measures - delayed step 4
-                           '2021-07-26': [1.05, 0.00, 0.30, 0.50],
-                           '2021-08-02': [1.05, 0.00, 0.30, 0.50],
-                           '2021-08-09': [1.05, 0.00, 0.30, 0.50],
-                           '2021-08-16': [1.05, 0.00, 0.30, 0.50],
-                           '2021-08-23': [1.05, 0.00, 0.30, 0.50],
+                           '2021-07-26': [1.05, 0.00, 0.30, 0.70],
+                           '2021-08-02': [1.05, 0.00, 0.30, 0.70],
+                           '2021-08-09': [1.05, 0.00, 0.30, 0.70],
+                           '2021-08-16': [1.05, 0.00, 0.30, 0.70],
+                           '2021-08-23': [1.05, 0.00, 0.30, 0.70],
                            #reopening schools in Sep 2021
-                           '2021-09-07': [1.05, sbv_new, 0.50, 0.80],
-                           '2021-09-15': [1.05, sbv_new, 0.50, 0.80],
-                           '2021-09-29': [1.05, sbv_new, 0.50, 0.80],
-                           '2021-10-15': [1.05, 0.40, 0.30, 0.60],
-                           '2021-10-22': [1.05, 0.00, 0.30, 0.60],
-                           '2021-11-01': [1.05, sbv_new, 0.50, 0.80],
+                           '2021-09-07': [1.05, sbv_new, 0.30, 0.60],
+                           '2021-09-15': [1.05, sbv_new, 0.30, 0.60],
+                           '2021-09-29': [1.05, sbv_new, 0.30, 0.60],
+                           '2021-10-15': [1.05, 0.40, 0.30, 0.50],
+                           '2021-10-22': [1.05, 0.00, 0.30, 0.50],
+                           '2021-10-29': [1.05, 0.00, 0.30, 0.50],
+                           '2021-11-05': [1.05, sbv_new, 0.30, 0.50],
+                           '2021-11-12': [1.05, sbv_new, 0.30, 0.50],
+                           '2021-11-19': [1.05, sbv_new, 0.30, 0.50],
+                           '2021-11-26': [1.05, sbv_new, 0.30, 0.50],
+                           '2021-12-02': [1.05, sbv_new, 0.30, 0.50],
+                           '2021-12-09': [1.05, sbv_new, 0.30, 0.50],
+                           '2021-12-16': [1.05, sbv_new, 0.30, 0.50],
+                           '2021-12-20': [1.05, 0.00, 0.30, 0.50],
+                           '2021-12-31': [1.50, 0.00, 0.20, 0.50],
+                           '2022-01-01': [1.50, 0.00, 0.20, 0.50],
+                            #4thlockdown starts
+                           #'2022-01-04': [1.10, 0.14, 0.20, 0.40],
+                           #'2022-01-11': [1.05, 0.14, 0.20, 0.40],
+                           #'2022-01-18': [1.05, 0.14, 0.30, 0.40],
+                           #'2022-01-25': [1.05, 0.14, 0.30, 0.40],
+                           #'2022-02-08': [1.05, 0.14, 0.30, 0.40],
+                           #'2022-02-15': [1.05, 0.00, 0.20, 0.30],
+                           #'2022-02-22': [1.05, 0.14, 0.30, 0.40],
+                           #'2022-03-01': [1.10, 0.14, 0.30, 0.40],
+                           #'2022-03-08': [1.05, 0.14, 0.30, 0.40],
+                           #'2022-03-15': [1.05, 0.14, 0.30, 0.40],
+                           #'2022-03-22': [1.05, 0.14, 0.30, 0.40],
+                           #'2022-03-29': [1.05, 0.14, 0.30, 0.40],
+                           #PlanB and schools open
+                           '2022-01-04': [1.10, sbv_new, 0.30, 0.50],
+                           '2022-01-11': [1.05, sbv_new, 0.30, 0.50],
+                           '2022-01-18': [1.05, sbv_new, 0.30, 0.50],
+                           '2022-01-30': [1.05, sbv_new, 0.30, 0.50],
+                           '2022-02-08': [1.05, sbv_new, 0.30, 0.50],
+                           '2022-02-15': [1.05, 0.00, 0.20, 0.30],
+                           '2022-02-22': [1.05, sbv_new, 0.30, 0.50],
+                           '2022-03-01': [1.10, sbv_new, 0.50, 0.50],
+                           '2022-03-08': [1.05, sbv_new, 0.50, 0.50],
+                           '2022-03-15': [1.05, sbv_new, 0.50, 0.50],
+                           '2022-03-22': [1.05, sbv_new, 0.50, 0.50],
+                           '2022-03-29': [1.05, sbv_new, 0.50, 0.50],
                            })
 
     beta_days = list(beta_dict.keys())
@@ -225,9 +299,14 @@ def make_sim(seed, beta, verbose=0.1):
     variants += [b117]
     # Add Delta strain starting middle of April
     b16172 = cv.variant('b16172', days=np.arange(sim.day('2021-04-15'), sim.day('2021-04-20')), n_imports=4000)
-    b16172.p['rel_beta']         = 3.1
+    b16172.p['rel_beta']         = 2.6
     b16172.p['rel_severe_prob']  = 0.2
     variants += [b16172]
+    # Add Omicron from mid-November
+    var_pars = sc.mergedicts(cvp.get_variant_pars(default=True), {'rel_beta': om_rel_beta,
+                                                                  'rel_severe_prob': om_rel_sev})
+    omicron = cv.variant(var_pars, label='omicron', days=np.arange(sim.day('2021-11-15'), sim.day('2021-11-30')), n_imports=4000)
+    variants += [omicron]
 
     # ADD TEST AND TRACE INTERVENTIONS
     tc_day = sim.day('2020-03-16') #intervention of some testing (tc) starts on 16th March and we run until 1st April when it increases
@@ -264,14 +343,23 @@ def make_sim(seed, beta, verbose=0.1):
     s_prob_jan = 0.08769
     s_prob_march = 0.08769
     #to match the increase in June-mid July from optuna increased testing is necessary
+    #s_prob_june21 = 0.11769
     s_prob_june21 = 0.19769
     #to match the drop in mid-July from optuna decline ine testing (or switched tracing off as alternative)
-    s_prob_july21 = 0.08769
-    s_prob_august21 = 0.08769
-    s_prob_sep21 =0.09769
-    s_prob_oct21 =0.07769
-    s_prob_nov21 =0.11769
-    s_prob_dec21 =0.09769
+    s_prob_july21 = 0.06769
+    #s_prob_august21 = 0.08769
+    #s_prob_sep21 =0.09769
+    #s_prob_oct21 =0.07769
+    #s_prob_nov21 =0.11769
+    #s_prob_dec21 =0.11769
+
+    ###old
+    #s_prob_july21 = 0.05769
+    s_prob_august21 = 0.05769
+    s_prob_sep21 =0.03769
+    s_prob_oct21 =0.03769
+    s_prob_nov21 =0.05769
+    s_prob_dec21 =0.08769
 
     t_delay       = 1.0
 
@@ -291,10 +379,10 @@ def make_sim(seed, beta, verbose=0.1):
     ####chnaged to 0.2 for fitting
     iso_vals6 = [{k:0.5 for k in 'hswc'}]
     #isolation from 20 June 2021 reduced
-    iso_vals7 = [{k:0.7 for k in 'hswc'}]
+    iso_vals7 = [{k:0.8 for k in 'hswc'}]
     #isolation from 16 July 2021 increased
     ####chnaged to 0.2 for fitting
-    iso_vals8 = [{k:0.3 for k in 'hswc'}]
+    iso_vals8 = [{k:0.5 for k in 'hswc'}]
     #isolation from August 2021
     iso_vals9 = [{k:0.5 for k in 'hswc'}]
     #isolation from Sep 2021
@@ -324,7 +412,15 @@ def make_sim(seed, beta, verbose=0.1):
         cv.test_prob(symp_prob=s_prob_dec21, asymp_prob=0.008, symp_quar_prob=0.0, start_day=tti_day_dec21, test_delay=t_delay),
         cv.contact_tracing(trace_probs={'h': 1, 's': 0.8, 'w': 0.8, 'c': 0.1},
                            trace_time={'h': 0, 's': 1, 'w': 1, 'c': 2},
-                           start_day='2020-06-01', end_day='2023-07-12',
+                           start_day='2020-06-01', end_day='2021-07-12',
+                           quar_period=10),
+        cv.contact_tracing(trace_probs={'h': 1, 's': 0.8, 'w': 0.8, 'c': 0.3},
+                           trace_time={'h': 0, 's': 1, 'w': 1, 'c': 2},
+                           start_day='2021-07-12', end_day='2021-08-02',
+                           quar_period=10),
+        cv.contact_tracing(trace_probs={'h': 1, 's': 0.8, 'w': 0.8, 'c': 0.1},
+                           trace_time={'h': 0, 's': 1, 'w': 1, 'c': 2},
+                           start_day='2021-08-02', end_day='2023-08-02',
                            quar_period=10),
         cv.dynamic_pars({'iso_factor': {'days': te_day, 'vals': iso_vals}}),
         cv.dynamic_pars({'iso_factor': {'days': tti_day_july, 'vals': iso_vals1}}),
@@ -339,21 +435,27 @@ def make_sim(seed, beta, verbose=0.1):
         cv.dynamic_pars({'iso_factor': {'days': tti_day_sep21, 'vals': iso_vals10}})]
     
     def change_hosp(sim):
-        if sim.t == tti_day_dec21:
-            sim['dur']['sev2rec']['par1'] = 7
+        if sim.t == tti_day_august21:
+            sim['dur']['sev2rec']['par1'] = 5.5
+
+
+    #def change_hosp2(sim):
+    #    if sim.t == tti_day_august21:
+    #        sim['dur']['sev2rec']['par1'] = 5.5
+
     interventions += [change_hosp]
 
     # Define the vaccines
-    dose_pars = cvpar.get_vaccine_dose_pars()['az']
+    dose_pars = cvp.get_vaccine_dose_pars()['az']
     dose_pars['interval'] = 7 * 8
-    variant_pars = cvpar.get_vaccine_variant_pars()['az']
-    variant_pars['omicron'] = 1/7 # PLACEHOLDER
-    az_vaccine = sc.mergedicts({'label':'az_uk'}, sc.mergedicts(dose_pars, variant_pars)) 
+    variant_pars = cvp.get_vaccine_variant_pars()['az']
+    variant_pars['omicron'] = om_az_eff # Efficacy of AZ against omicron
+    az_vaccine = sc.mergedicts({'label':'az_uk'}, sc.mergedicts(dose_pars, variant_pars))
     
-    dose_pars = cvpar.get_vaccine_dose_pars()['pfizer']
+    dose_pars = cvp.get_vaccine_dose_pars()['pfizer']
     dose_pars['interval'] = 7 * 8
-    variant_pars = cvpar.get_vaccine_variant_pars()['pfizer']
-    variant_pars['omicron'] = 1/7 # PLACEHOLDER
+    variant_pars = cvp.get_vaccine_variant_pars()['pfizer']
+    variant_pars['omicron'] = om_pf_eff # Efficacy of Pfizer against omicron
     pfizer_vaccine = sc.mergedicts({'label':'pfizer_uk'}, sc.mergedicts(dose_pars, variant_pars))
 
     # Loop over vaccination in different ages
@@ -362,53 +464,181 @@ def make_sim(seed, beta, verbose=0.1):
         vx_start_day = sim.day(vx_phase['start_day'])
         vx_end_day = vx_start_day + vx_phase['days_to_reach']
         days = np.arange(vx_start_day, vx_end_day)
+
         vx = cv.vaccinate_prob(vaccine=vaccine, days=days, subtarget=subtarget_dict[age], label=f'Vaccinate {age}')
         interventions += [vx]
+
+    # Define booster as a custom vaccination but with parameters like pfizer and moderna as these are used in England as boostes
+    booster = dict(
+        nab_eff=sc.dcp(sim['nab_eff']),
+        nab_init=None,
+        nab_boost=3,
+        doses=1,
+        interval=None,
+        wild=1.0,
+        alpha=1 / 2.3,
+        beta=1 / 9,
+        gamma=1 / 8,
+        delta=1 / 3,
+        omicron=om_boost_eff  # Efficacy of the booster against omicron
+    )
+
+    booster_target = {'inds': lambda sim: cv.true(sim.people.doses != 2),
+                      'vals': 0}  # Only give boosters to people who have had 2 doses
+
+    def num_boosters(sim):
+        if sim.t < sim.day('2021-10-01'):                      return 0
+        if sim.day('2021-10-01') < sim.day('2021-12-01'):      return 130_000
+        else:                                                  return 150_000  # Just use a placeholder value
+
+    booster = cv.vaccinate_num(vaccine=booster, label='booster', sequence='age', subtarget=booster_target, num_doses=num_boosters, booster=True)
+    interventions += [booster]
 
     # Finally, update the parameters
     sim.update_pars(interventions=interventions, variants=variants)
     for intervention in sim['interventions']:
         intervention.do_plot = False
 
+    # Initialize then add immunity escape parameters
+    sim.initialize()
+
+    # Now vary omicron's immunity
+    immunity = sim['immunity']
+    beta_imm = cvp.get_cross_immunity()['beta'] # Assume that omicron is like beta
+    variant_mapping = sim['variant_map']
+    for i in range(len(immunity)):
+        if i != len(immunity) - 1:
+            immunity[len(immunity) - 1, i] = beta_imm[variant_mapping[i]] * om_rel_imm
+            immunity[i, len(immunity) - 1] = beta_imm[variant_mapping[i]] * om_rel_imm
+    sim['immunity'] = immunity
+
+    sim.meta = meta
+
     return sim
+
+
+def run_sim(sim, do_shrink=True):
+    ''' Run a simulation '''
+
+    print(f'Running sim {sim.meta.count:5g} of {sim.meta.n_sims:5g} {str(sim.meta.vals.values()):40s}')
+    sim.run(until=day_before_scens) # Run the partial sim
+    sim.run() # Run the rest of the sim
+    if do_shrink: sim.shrink()
+
+    return sim
+
+
+def make_msims(sims):
+    ''' Take a slice of sims and turn it into a multisim '''
+    msim = cv.MultiSim(sims)
+    msim.reduce(use_mean=True)
+    draw, seed = sims[0].meta.inds
+    for s,sim in enumerate(sims): # Check that everything except seed matches
+        assert draw == sim.meta.inds[0]
+        assert (s==0) or seed != sim.meta.inds[1]
+    msim.meta = sc.objdict()
+    msim.meta.inds = [draw]
+    msim.meta.vals = sc.dcp(sims[0].meta.vals)
+    msim.meta.vals.pop('seed')
+    print(f'Processing multisim {msim.meta.vals.values()}...')
+
+    return msim
 
 
 ########################################################################
 # Run calibration and scenarios
+# whattorun = ['nov_quickfit',    # STEP 1: run a quick fit to make sure everything works
+#              'nov_fullfit',     # STEP 2: run the model until November 15 to demonstrate the fit to historical data pre-omicron
+#              'dec_sweeps',      # STEP 3: run sweeps over properties of omicron. CAUTION: slow to run, needs VMs
+#              'dec_quickfit',    # STEP 4: using known properites of omicron, run a quick fit to december data to make sure everything works
+#              'dec_fullfit',     # STEP 5: run the model until December 31 to demonstrate the fit to data after omicron
+#              'dec_project'      # STEP 6: project forward over school reopening scenarios.
+#              ]
 ########################################################################
 if __name__ == '__main__':
 
-    # Make sim
-    sim = make_sim(seed,beta)
+    if whattorun in ['nov_quickfit', 'dec_quickfit']:
+        kwargs = sc.mergedicts(om_pars, settings[whattorun])
+        sim = make_sim(seed=seed, **kwargs)
+        sim.run()
+        sim.plot(to_plot=to_plot)
 
-    # Add analyzers
-    n_doses = []
-    dose_analyzer   = lambda sim: n_doses.append(sim.people.doses.copy())
-    age_stats       = cv.daily_age_stats(states=['vaccinated', 'exposed', 'severe', 'dead'])
-    analyzers       = [dose_analyzer, age_stats]
-    sim.update_pars(analyzers=analyzers)
-    sim.initialize()
-    sim.run()
+    elif whattorun in ['nov_fullfit', 'dec_fullfit', 'dec_project']:
+        kwargs = sc.mergedicts(om_pars, settings[whattorun])
+        s0 = make_sim(seed=seed, **kwargs)
+        sims = []
+        for seed in range(4):
+            sim = s0.copy()
+            sim['rand_seed'] = seed
+            sim.set_seed()
+            sim.label = f"Sim {seed}"
+            sims.append(sim)
 
-    # Do plotting
-    if do_plot:
-        sim.plot(to_plot=to_plot, do_save=True, do_show=False, fig_path=figfolder+'/England_test_01Dec_omic.png',
-                  legend_args={'loc': 'upper left'}, axis_args={'hspace': 0.4}, interval=75, n_cols=2)
-        sim.plot('variants', do_save=True, do_show=False, fig_path=figfolder+'/uk_strain_test_01Dec_omic.png')
+        msim = cv.MultiSim(sims)
+        msim.run()
+        msim.reduce()
+        msim.plot(to_plot=to_plot)
 
-        pl.figure()
-        n_doses = np.array(n_doses)
-        fully_vaccinated = (n_doses == 2).sum(axis=1)
-        first_dose = (n_doses == 1).sum(axis=1)
-#        boosted = (n_doses > 2).sum(axis=1)
-        pl.stackplot(sim.tvec, first_dose, fully_vaccinated)#, boosted)
-        pl.legend(['First dose', 'Fully vaccinated']) #, 'Boosted']);
-        pl.savefig(figfolder+'/doses.png')
+    elif whattorun=='dec_sweeps':
+        n_seeds = [5, 1][debug]
+        n_draws = [2000, 4][debug]
+        n_sims = n_seeds * n_draws
+        count = 0
+        ikw = []
+        T = sc.tic()
 
-        daily_age = sim.get_analyzer(1)
-        daily_age.plot(do_show=False)
-        pl.savefig(figfolder+'/age_stats.png')
-        daily_age.plot(total=True, do_show=False)
-        pl.savefig(figfolder+'/age_stats_total.png')
+        # Make sims
+        sc.heading('Making sims...')
+        for draw in range(n_draws):
+            om_pars = sweep_om_pars()
+            for seed in range(n_seeds):
+                print(f'Creating arguments for sim {count} of {n_sims}...')
+                count += 1
+                meta = sc.objdict()
+                meta.count = count
+                meta.n_sims = n_sims
+                meta.inds = [draw, seed]
+                meta.vals = sc.objdict(sc.mergedicts(om_pars, dict(seed=seed)))
+                ikw.append(sc.dcp(meta.vals))
+                ikw[-1].meta = meta
+
+        kwargs = settings[whattorun]
+        sim_configs = sc.parallelize(make_sim, iterkwargs=ikw, kwargs=kwargs)
+
+        # Run sims
+        all_sims = sc.parallelize(run_sim, iterarg=sim_configs)
+        sims = np.empty((n_draws, n_seeds), dtype=object)
+        for sim in all_sims:  # Unflatten array
+            draw, seed = sim.meta.inds
+            sims[draw, seed] = sim
+
+        # Convert to msims
+        all_sims_semi_flat = []
+        for draw in range(n_draws):
+            sim_seeds = sims[draw, :].tolist()
+            all_sims_semi_flat.append(sim_seeds)
+        msims = np.empty(n_draws, dtype=object)
+        all_msims = sc.parallelize(make_msims, iterarg=all_sims_semi_flat)
+        for msim in all_msims:  # Unflatten array
+            draw = msim.meta.inds
+            msims[draw] = msim
+
+        # Do processing and store results
+        variables = ['cum_infections', 'cum_severe', 'cum_deaths']
+        d = sc.objdict()
+        d.rel_beta = []
+        d.rel_imm = []
+        d.rel_sev = []
+        for v in variables: d[v] = []
+        for msim in all_msims:
+            d.rel_beta.append(msim.meta.vals['rel_beta'])
+            d.rel_imm.append(msim.meta.vals['rel_imm'])
+            d.rel_sev.append(msim.meta.vals['rel_severe_prob'])
+            for v in variables:
+                d[v].append(msim.results[v].values[-1] - msim.results[v].values[day_before_scens])
+            sc.saveobj(heatmap_file, d)
+        sc.toc(T)
+
+
 
 
