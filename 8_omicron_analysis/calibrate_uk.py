@@ -32,7 +32,7 @@ whattorun = ['nov_quickfit',    # STEP 1: run a quick fit to make sure everythin
 # Saving and plotting settings depend on what you're running
 settings = {'nov_quickfit': {'verbose':0.1,  'end_day': '2021-11-15', 'data_path': data_path1},
             'nov_fullfit':  {'verbose':0.01, 'end_day': '2021-11-15', 'data_path': data_path1},
-            'dec_sweeps':   {'verbose':-1,   'end_day': '2021-12-31', 'data_path': None},
+            'dec_sweeps':   {'verbose':0.01, 'end_day': '2021-12-31', 'data_path': None},
             'dec_quickfit': {'verbose':0.1,  'end_day': '2021-12-31', 'data_path': data_path2},
             'dec_fullfit':  {'verbose':0.01, 'end_day': '2021-12-31', 'data_path': data_path2},
             'dec_project':  {'verbose':0.01, 'end_day': '2022-03-10', 'data_path': data_path2},
@@ -606,10 +606,11 @@ if __name__ == '__main__':
                 ikw[-1].meta = meta
 
         kwargs = settings[whattorun]
-        sim_configs = sc.parallelize(make_sim, iterkwargs=ikw, kwargs=kwargs, ncpus=48)
+        sim_configs = sc.parallelize(make_sim, iterkwargs=ikw, kwargs=kwargs)
 
         # Run sims
-        all_sims = sc.parallelize(run_sim, iterarg=sim_configs)
+        sc.heading('Finished initializing; should start running NOW!...')
+        all_sims = sc.parallelize(run_sim, iterarg=sim_configs, ncpus=48)
         sims = np.empty((n_draws, n_seeds), dtype=object)
         for sim in all_sims:  # Unflatten array
             draw, seed = sim.meta.inds
