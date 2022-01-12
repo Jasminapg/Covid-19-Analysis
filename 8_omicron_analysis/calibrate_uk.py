@@ -500,7 +500,11 @@ def make_sim(seed, beta=0.0079, rel_beta=None, rel_severe_prob=None, rel_imm=Non
         intervention.do_plot = False
 
     # Initialize then add immunity escape parameters
+    sim.meta = meta
+
+    print(f'Initializing sim {sim.meta.count:5g} {str(sim.meta.vals.values()):40s}')
     sim.initialize()
+    print(f'Finished initializing sim {sim.meta.count:5g} {str(sim.meta.vals.values()):40s}')
 
     # Now vary omicron's immunity
     immunity = sim['immunity']
@@ -512,7 +516,6 @@ def make_sim(seed, beta=0.0079, rel_beta=None, rel_severe_prob=None, rel_imm=Non
             immunity[i, len(immunity) - 1] = beta_imm[variant_mapping[i]] * om_rel_imm
     sim['immunity'] = immunity
 
-    sim.meta = meta
 
     return sim
 
@@ -603,7 +606,7 @@ if __name__ == '__main__':
                 ikw[-1].meta = meta
 
         kwargs = settings[whattorun]
-        sim_configs = sc.parallelize(make_sim, iterkwargs=ikw, kwargs=kwargs)
+        sim_configs = sc.parallelize(make_sim, iterkwargs=ikw, kwargs=kwargs, ncpus=48)
 
         # Run sims
         all_sims = sc.parallelize(run_sim, iterarg=sim_configs)
