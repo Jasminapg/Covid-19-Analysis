@@ -109,7 +109,7 @@ om_pars.rel_imm=0.2
 # Omicron sweep parameters
 def sweep_om_pars():
     om_pars = sc.objdict()
-    om_pars.rel_severe_prob = np.random.choice([0.5, 1, 1.5])
+    om_pars.rel_severe_prob = 0.5 # np.random.choice([0.5, 1, 1.5])
     om_pars.rel_beta = np.random.uniform(2, 4)  # changes the relative transmissibility of omicron
     om_pars.rel_imm = np.random.uniform(0.1, 0.4)  # changes the relative immunity of omicron
     return om_pars
