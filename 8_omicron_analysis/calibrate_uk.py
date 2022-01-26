@@ -92,7 +92,7 @@ def set_subtargets(vx_phase):
 
 subtarget_dict = {}
 for age, vx_phase in vx_rollout.items():
-    vx_phase['daily_prob'] = 0.02
+    vx_phase['daily_prob'] = 0.025
     # vx_phase['final_uptake'] / vx_phase['days_to_reach']
     subtarget_dict[age] = {'inds': set_subtargets(vx_phase),
                            'vals': vx_phase['daily_prob']}
@@ -109,8 +109,8 @@ om_pars.rel_imm=0.2
 # Omicron sweep parameters
 def sweep_om_pars():
     om_pars = sc.objdict()
-    om_pars.rel_severe_prob = 0.5 # np.random.choice([0.5, 1, 1.5])
-    om_pars.rel_beta = np.random.uniform(2, 4)  # changes the relative transmissibility of omicron
+    om_pars.rel_severe_prob = np.random.choice([0.3, 1, 1.3])
+    om_pars.rel_beta = np.random.uniform(3, 6)  # changes the relative transmissibility of omicron
     om_pars.rel_imm = np.random.uniform(0.1, 0.4)  # changes the relative immunity of omicron
     return om_pars
 
@@ -247,9 +247,10 @@ def make_sim(seed, beta=0.0079, rel_beta=None, rel_severe_prob=None, rel_imm=Non
                            '2021-12-02': [1.05, sbv_new, 0.30, 0.50],
                            '2021-12-09': [1.05, sbv_new, 0.30, 0.50],
                            '2021-12-16': [1.05, sbv_new, 0.30, 0.50],
-                           '2021-12-20': [1.05, 0.00, 0.30, 0.50],
+                           '2021-12-20': [1.05, 0.00, 0.30, 0.30],
+                           '2021-12-25': [1.50, 0.00, 0.20, 0.30],
                            '2021-12-31': [1.50, 0.00, 0.20, 0.50],
-                           '2022-01-01': [1.50, 0.00, 0.20, 0.50],
+                           '2022-01-01': [1.20, 0.00, 0.20, 0.30],
                             #4thlockdown starts
                            #'2022-01-04': [1.10, 0.14, 0.20, 0.40],
                            #'2022-01-11': [1.05, 0.14, 0.20, 0.40],
@@ -359,7 +360,7 @@ def make_sim(seed, beta=0.0079, rel_beta=None, rel_severe_prob=None, rel_imm=Non
     s_prob_sep21 =0.03769
     s_prob_oct21 =0.03769
     s_prob_nov21 =0.05769
-    s_prob_dec21 =0.08769
+    s_prob_dec21 =0.05769
 
     t_delay       = 1.0
 
@@ -409,7 +410,7 @@ def make_sim(seed, beta=0.0079, rel_beta=None, rel_severe_prob=None, rel_imm=Non
         cv.test_prob(symp_prob=s_prob_sep21, asymp_prob=0.008, symp_quar_prob=0.0, start_day=tti_day_sep21, end_day=tti_day_oct21-1, test_delay=t_delay),
         cv.test_prob(symp_prob=s_prob_oct21, asymp_prob=0.004, symp_quar_prob=0.0, start_day=tti_day_oct21, end_day=tti_day_nov21-1, test_delay=t_delay),
         cv.test_prob(symp_prob=s_prob_nov21, asymp_prob=0.008, symp_quar_prob=0.0, start_day=tti_day_nov21, end_day=tti_day_dec21-1, test_delay=t_delay),
-        cv.test_prob(symp_prob=s_prob_dec21, asymp_prob=0.008, symp_quar_prob=0.0, start_day=tti_day_dec21, test_delay=t_delay),
+        cv.test_prob(symp_prob=s_prob_dec21, asymp_prob=0.004, symp_quar_prob=0.0, start_day=tti_day_dec21, test_delay=t_delay),
         cv.contact_tracing(trace_probs={'h': 1, 's': 0.8, 'w': 0.8, 'c': 0.1},
                            trace_time={'h': 0, 's': 1, 'w': 1, 'c': 2},
                            start_day='2020-06-01', end_day='2021-07-12',
@@ -488,8 +489,9 @@ def make_sim(seed, beta=0.0079, rel_beta=None, rel_severe_prob=None, rel_imm=Non
 
     def num_boosters(sim):
         if sim.t < sim.day('2021-10-01'):                      return 0
-        if sim.day('2021-10-01') < sim.day('2021-12-01'):      return 130_000
-        else:                                                  return 150_000  # Just use a placeholder value
+        if sim.day('2021-10-01') < sim.day('2021-11-21'):      return 130_000
+        if sim.day('2021-11-22') < sim.day('2021-12-25'):      return 150_000
+        else:                                                  return 130_000  # Just use a placeholder value
 
     booster = cv.vaccinate_num(vaccine=booster, label='booster', sequence='age', subtarget=booster_target, num_doses=num_boosters, booster=True)
     interventions += [booster]
