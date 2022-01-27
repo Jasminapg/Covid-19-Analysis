@@ -39,7 +39,7 @@ settings = {'nov_quickfit': {'verbose':0.1,  'end_day': '2021-11-15', 'data_path
             }
 
 seed    = 1
-debug   = 0
+debug   = 1
 start_day = '2020-01-20'
 date_before_scens = settings['nov_fullfit']['end_day']
 day_before_scens  = cv.day(date_before_scens, start_date=start_day)
@@ -516,17 +516,10 @@ def make_sim(seed, beta=0.0079, rel_beta=None, rel_severe_prob=None, rel_imm=Non
             immunity[i, len(immunity) - 1] = beta_imm[variant_mapping[i]] * om_rel_imm
     sim['immunity'] = immunity
 
-
-    return sim
-
-
-def run_sim(sim, do_shrink=True):
-    ''' Run a simulation '''
-
     print(f'Running sim {sim.meta.count:5g} of {sim.meta.n_sims:5g} {str(sim.meta.vals.values()):40s}')
     sim.run(until=day_before_scens) # Run the partial sim
     sim.run() # Run the rest of the sim
-    if do_shrink: sim.shrink()
+    sim.shrink()
 
     return sim
 
@@ -606,11 +599,11 @@ if __name__ == '__main__':
                 ikw[-1].meta = meta
 
         kwargs = settings[whattorun]
-        sim_configs = sc.parallelize(make_sim, iterkwargs=ikw, kwargs=kwargs)
+#        sim_configs = sc.parallelize(make_sim, iterkwargs=ikw, kwargs=kwargs)
+#        sc.heading('Finished initializing; should start running NOW!...')
+#        all_sims = sc.parallelize(run_sim, iterarg=sim_configs, ncpus=48)
+        all_sims = sc.parallelize(make_sim, iterkwargs=ikw, kwargs=kwargs)
 
-        # Run sims
-        sc.heading('Finished initializing; should start running NOW!...')
-        all_sims = sc.parallelize(run_sim, iterarg=sim_configs, ncpus=48)
         sims = np.empty((n_draws, n_seeds), dtype=object)
         for sim in all_sims:  # Unflatten array
             draw, seed = sim.meta.inds
