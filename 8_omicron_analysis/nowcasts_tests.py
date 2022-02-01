@@ -5,12 +5,7 @@ Plotting UK vaccine scenarios
 import numpy as np
 import pylab as pl
 import covasim as cv
-import matplotlib as mpl
-from matplotlib import ticker
-import datetime as dt
 import sciris as sc
-import seaborn as sns
-import pandas as pd
 
 T = sc.tic()
 # Load files and extract data
@@ -18,7 +13,7 @@ msim_details = {#'Nowcasting 01 Dec': 'results_Vac/uk_sim_test_20Nov.obj',
                 #'Opening Schools in January 2022 and partial lockdown': 'results/uk_sim_test_01Dec_omic.obj',
                 'Lockdown January-March 2022': 'results/uk_sim_test_01Dec_omic.obj'}
                 #'Delta, June Step 4 opening and Vaccine extended to teenagers': 'results_Vac/uk_sim_test_vx1.obj'}
-    
+
     #for the PTRSA paper
                 #'Scenario 1: no Delta, Vaccine and June Stage 4 opening': 'results_Vac/uk_sim_calibration_2Nov_openJune_nodelta.obj',
                 #'Scenario 2: Delta, Vaccine and June Stage 4 opening': 'results_Vac/uk_sim_calibration_2Nov_openJune.obj',
@@ -95,7 +90,7 @@ for i,l in enumerate(labels):
         ds = np.arange(0,len(tvec_d),1) # Downsample
         thissim = msims[l].sims[0]
         datatoplot = thissim.data['new_diagnoses'][date_inds_d[0]:date_inds_d[1]]
-        pl.plot(tvec_d[ds], datatoplot[ds], 'd', c='k', markersize=12, alpha=0.75, label='Data') 
+        pl.plot(tvec_d[ds], datatoplot[ds], 'd', c='k', markersize=12, alpha=0.75, label='Data')
     toplot = plotdict['new_diagnoses'][l][date_inds[0]:date_inds[1]]
     pl.plot(tvec, toplot, c=colors[i], label=l, lw=4, alpha=1.0)
     low    = plotdict_l['new_diagnoses'][l][date_inds[0]:date_inds[1]]
@@ -105,7 +100,7 @@ for i,l in enumerate(labels):
 pl.ylabel('Daily new diagnoses')
 ax = pl.gca()
 ax.set_xticks(datemarks)
-cv.date_formatter(start_day=start_day, ax=ax, dateformat=dateformat)
+sc.datenumformatter(start_date=start_day, ax=ax, dateformat=dateformat)
 sc.setylim()
 sc.commaticks()
 pl.legend(frameon=False)
@@ -149,7 +144,7 @@ for i,l in enumerate(labels):
 pl.ylabel('Daily Hospitalisations')
 ax = pl.gca()
 ax.set_xticks(datemarks)
-cv.date_formatter(start_day=start_day, ax=ax, dateformat=dateformat)
+sc.datenumformatter(start_date=start_day, ax=ax, dateformat=dateformat)
 sc.setylim()
 sc.commaticks()
 pl.legend(frameon=False)
@@ -173,7 +168,7 @@ for i,l in enumerate(labels):
 pl.ylabel('Occupancy')
 ax = pl.gca()
 ax.set_xticks(datemarks)
-cv.date_formatter(start_day=start_day, ax=ax, dateformat=dateformat)
+sc.datenumformatter(start_date=start_day, ax=ax, dateformat=dateformat)
 sc.setylim()
 sc.commaticks()
 pl.legend(frameon=False)
@@ -197,7 +192,7 @@ pl.ylabel('Daily Deaths')
 pl.axhline(1, linestyle=':', c='k', alpha=0.3)
 ax = pl.gca()
 ax.set_xticks(datemarks)
-cv.date_formatter(start_day=start_day, ax=ax, dateformat=dateformat)
+sc.datenumformatter(start_date=start_day, ax=ax, dateformat=dateformat)
 sc.setylim()
 pl.legend(frameon=False)
 sc.boxoff()
