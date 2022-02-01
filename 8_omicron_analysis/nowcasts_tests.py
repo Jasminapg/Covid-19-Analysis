@@ -41,20 +41,12 @@ start_day = '2021-01-01'
 end_day = '2022-01-01'
 data_end_day  = '2022-01-01' # Final date for calibration -- set this to a date before boosters started
 
-
-#start_day = '2021-05-01'
-#data_end_day = '2021-11-22'
-#end_day = '2021-12-30'
+# Set up date vectors
 date_inds = np.array([sim.day(start_day), sim.day(end_day)])
 date_len = date_inds[1]-date_inds[0]
-tvec = np.arange(date_len)
-
+tvec = sc.daterange(start_day, end_day, as_date=True)[:-1] # Remove last day
 date_inds_d = np.array([sim.day(start_day), sim.day(data_end_day)])
-date_len_d = date_inds_d[1]-date_inds_d[0]
-tvec_d = np.arange(date_len_d)
-
-
-#tvec = np.arange(len(msims[0].results['t']))
+tvec_d = np.array(tvec)
 
 # Fonts and sizes for all figures
 font_size = 22
@@ -77,34 +69,33 @@ pl.figtext(tx1, ty2, 'C', fontsize=fsizel)
 pl.figtext(tx2, ty2, 'D', fontsize=fsizel)
 
 # Infections: RdPu, R: GnBu, Severe: YlOrBr, Deaths: Greys
-datemarks = pl.array([sim.day('2021-01-01'), sim.day('2021-03-01'),  sim.day('2021-05-01'), sim.day('2021-07-01'), sim.day('2021-09-01'), sim.day('2021-10-01'), sim.day('2021-11-01'), sim.day('2021-12-01'), sim.day('2022-01-01')])-sim.day('2021-01-01')
-#datemarks = pl.array([sim.day('2021-09-01'), sim.day('2021-10-01'), sim.day('2021-11-01'), sim.day('2021-12-01'), sim.day('2022-01-01'), sim.day('2022-02-01')])-sim.day('2021-09-01')
-#datemarks = pl.array([sim.day('2021-12-01'), sim.day('2021-12-01'), sim.day('2022-01-01'), sim.day('2022-02-01')])-sim.day('2021-12-01')
+
+
+def format_ax(label):
+    ax = pl.gca()
+    ax.set_ylabel(label)
+    sc.dateformatter(ax=ax)
+    sc.setylim()
+    sc.commaticks()
+    pl.legend(frameon=False)
+    sc.boxoff()
+    return
 
 
 # Plot A: new infections
 pl.subplot(2, 2, 1)
 colors = pl.cm.RdPu([0.3,0.6,0.9])
+ds = np.arange(0,len(tvec_d),1) # Downsample
+thissim = msims[l].sims[0]
+datatoplot = thissim.data['new_diagnoses'][date_inds_d[0]:date_inds_d[1]]
+pl.plot(tvec_d[ds], datatoplot[ds], 'd', c='k', markersize=12, alpha=0.75, label='Data')
 for i,l in enumerate(labels):
-    if i==0:
-        ds = np.arange(0,len(tvec_d),1) # Downsample
-        thissim = msims[l].sims[0]
-        datatoplot = thissim.data['new_diagnoses'][date_inds_d[0]:date_inds_d[1]]
-        pl.plot(tvec_d[ds], datatoplot[ds], 'd', c='k', markersize=12, alpha=0.75, label='Data')
     toplot = plotdict['new_diagnoses'][l][date_inds[0]:date_inds[1]]
     pl.plot(tvec, toplot, c=colors[i], label=l, lw=4, alpha=1.0)
     low    = plotdict_l['new_diagnoses'][l][date_inds[0]:date_inds[1]]
     high   = plotdict_h['new_diagnoses'][l][date_inds[0]:date_inds[1]]
     pl.fill_between(tvec, low, high, facecolor=colors[i], alpha=0.2)
-
-pl.ylabel('Daily new diagnoses')
-ax = pl.gca()
-ax.set_xticks(datemarks)
-sc.datenumformatter(start_date=start_day, ax=ax, dateformat=dateformat)
-sc.setylim()
-sc.commaticks()
-pl.legend(frameon=False)
-sc.boxoff()
+format_ax('Daily new diagnoses')
 
 
 # Plot B: R_eff
@@ -128,75 +119,49 @@ sc.boxoff()
 
 # Plot C: severe cases
 pl.subplot(2, 2, 2)
-colors = pl.cm.RdPu([0.3,0.6,0.9])
 colors = pl.cm.YlOrBr([0.9,0.6,0.3])
+ds = np.arange(0,len(tvec_d),7) # Downsample
+thissim = msims[l].sims[0]
+datatoplot = thissim.data['new_severe'][date_inds_d[0]:date_inds_d[1]]
+pl.plot(tvec_d[ds], datatoplot[ds], 'd', c='k', markersize=12, alpha=0.75, label='Data')
 for i,l in enumerate(labels):
-    if i==0:
-        ds = np.arange(0,len(tvec_d),7) # Downsample
-        thissim = msims[l].sims[0]
-        datatoplot = thissim.data['new_severe'][date_inds_d[0]:date_inds_d[1]]
-        pl.plot(tvec_d[ds], datatoplot[ds], 'd', c='k', markersize=12, alpha=0.75, label='Data')
     toplot = plotdict['new_severe'][l][date_inds[0]:date_inds[1]]
     pl.plot(tvec, toplot, c=colors[i], label=l, lw=4, alpha=1.0)
     low = plotdict_l['new_severe'][l][date_inds[0]:date_inds[1]]
     high = plotdict_h['new_severe'][l][date_inds[0]:date_inds[1]]
     pl.fill_between(tvec, low, high, facecolor=colors[i], alpha=0.2)
-pl.ylabel('Daily Hospitalisations')
-ax = pl.gca()
-ax.set_xticks(datemarks)
-sc.datenumformatter(start_date=start_day, ax=ax, dateformat=dateformat)
-sc.setylim()
-sc.commaticks()
-pl.legend(frameon=False)
-sc.boxoff()
+format_ax('Daily Hospitalisations')
 
 # Plot D: deaths
 pl.subplot(2, 2, 3)
 colors = pl.cm.RdPu([0.3,0.6,0.9])
-#colors = pl.cm.Greens([0.9,0.6,0.3])
+ds = np.arange(0,len(tvec_d),7) # Downsample
+thissim = msims[l].sims[0]
+datatoplot = thissim.data['n_severe'][date_inds_d[0]:date_inds_d[1]]
+pl.plot(tvec_d[ds], datatoplot[ds], 'd', c='k', markersize=12, alpha=0.75, label='Data')
 for i,l in enumerate(labels):
-    if i==0:
-        ds = np.arange(0,len(tvec_d),7) # Downsample
-        thissim = msims[l].sims[0]
-        datatoplot = thissim.data['n_severe'][date_inds_d[0]:date_inds_d[1]]
-        pl.plot(tvec_d[ds], datatoplot[ds], 'd', c='k', markersize=12, alpha=0.75, label='Data')
     toplot = plotdict['n_severe'][l][date_inds[0]:date_inds[1]]
     pl.plot(tvec, toplot, c=colors[i], label=l, lw=4, alpha=1.0)
     low = plotdict_l['n_severe'][l][date_inds[0]:date_inds[1]]
     high = plotdict_h['n_severe'][l][date_inds[0]:date_inds[1]]
     pl.fill_between(tvec, low, high, facecolor=colors[i], alpha=0.2)
-pl.ylabel('Occupancy')
-ax = pl.gca()
-ax.set_xticks(datemarks)
-sc.datenumformatter(start_date=start_day, ax=ax, dateformat=dateformat)
-sc.setylim()
-sc.commaticks()
-pl.legend(frameon=False)
-sc.boxoff()
+format_ax('Occupancy')
 
 #Plot B alternative: ICUs
 pl.subplot(2, 2, 4)
 colors = pl.cm.GnBu([0.9,0.6,0.3])
+ds = np.arange(0,len(tvec_d),1) # Downsample
+thissim = msims[l].sims[0]
+datatoplot = thissim.data['new_deaths'][date_inds_d[0]:date_inds_d[1]]
+pl.plot(tvec_d[ds], datatoplot[ds], 'd', c='k', markersize=12, alpha=0.75, label='Data')
 for i,l in enumerate(labels):
-    if i==0:
-        ds = np.arange(0,len(tvec_d),1) # Downsample
-        thissim = msims[l].sims[0]
-        datatoplot = thissim.data['new_deaths'][date_inds_d[0]:date_inds_d[1]]
-        pl.plot(tvec_d[ds], datatoplot[ds], 'd', c='k', markersize=12, alpha=0.75, label='Data')
     toplot = plotdict['new_deaths'][l][date_inds[0]:date_inds[1]]
     pl.plot(tvec, toplot, c=colors[i], label=l, lw=4, alpha=1.0)
     low = plotdict_l['new_deaths'][l][date_inds[0]:date_inds[1]]
     high = plotdict_h['new_deaths'][l][date_inds[0]:date_inds[1]]
     pl.fill_between(tvec, low, high, facecolor=colors[i], alpha=0.2)
-pl.ylabel('Daily Deaths')
-pl.axhline(1, linestyle=':', c='k', alpha=0.3)
-ax = pl.gca()
-ax.set_xticks(datemarks)
-sc.datenumformatter(start_date=start_day, ax=ax, dateformat=dateformat)
-sc.setylim()
-pl.legend(frameon=False)
-sc.boxoff()
-
+format_ax('Daily Deaths')
+# pl.axhline(1, linestyle=':', c='k', alpha=0.3) # CK: not visible
 
 
 cv.savefig('figs/uk_vx_scens_presentation.png')
