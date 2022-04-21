@@ -44,8 +44,8 @@ resfolder = 'results_Vac'
 
 # Important dates
 start_day = '2020-01-20'
-end_day = '2021-07-30'
-data_end = '2021-05-30' # Final date for calibration
+end_day = '2021-08-31'
+data_end = '2021-06-30' # Final date for calibration
 
 
 ########################################################################
@@ -112,7 +112,7 @@ for vx_scen in vx_scens:
 # Create the baseline simulation
 ########################################################################
 
-def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None, vx_scenario=None, end_day='2021-10-30', verbose=0):
+def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None, vx_scenario=None, end_day='2021-08-31', verbose=0):
 
     # Set the parameters
     #total_pop    = 67.86e6 # UK population size
@@ -144,8 +144,8 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
     )
 
     sim = cv.Sim(pars=pars, datafile=data_path, location='uk')
-    #sim['prognoses']['sus_ORs'][0] = 0.5 # ages 20-30
-    #sim['prognoses']['sus_ORs'][1] = 1.0 # ages 20-30
+    #sim['prognoses']['sus_ORs'][0] = 0.5 # ages 0-10
+    #sim['prognoses']['sus_ORs'][1] = 1.0 # ages 11-20
 
    # ADD BETA INTERVENTIONS
     #sbv is transmission in schools and assumed to be 63%=0.7*90% assuming that masks are used and redyce it by 30%
@@ -228,7 +228,7 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
         ##model transmission remaining at schools as 14% (to account for 30% reduction due to school measures)
         ## reopening schools on 8th March, society stage 1 29th March, society stage 2 12th April,
         ## society some more (stage 3) 17th May and everything (stage 4) 21st June 2021.
-        ## Projecting until end of 2021.
+        ## Projecting until end of August 2021.
         if scenario == 'Roadmap_Step3':
 
             beta_scens = sc.odict({'2021-06-21': [1.05, sbv, 0.40, 0.80],
@@ -259,43 +259,22 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
     w_beta = cv.change_beta(days=beta_days, changes=[c[2] for c in beta_dict.values()], layers='w')
     c_beta = cv.change_beta(days=beta_days, changes=[c[3] for c in beta_dict.values()], layers='c')
 
-    # Add B.1.1351 strain from Janury 2021
+    # Add B.1.1351 strain from August 2020; n_imports, rel_beta and rel_severe_beta from calibration
     b1351 = cv.variant('b1351', days=np.arange(sim.day('2020-08-10'), sim.day('2020-08-20')), n_imports=3000)
     b1351.p['rel_beta']        = 1.2
-    #b1351.p['rel_symp_prob']   = 1.0
     b1351.p['rel_severe_prob'] = 0.4
-    #b1351.p['rel_crit_prob']   = 1.2
-    #b1351.p['rel_death_prob']  = 1.0
     sim['variants'] += [b1351]
 
-    # Add B.1.117 strain from Septemmber 2020
+    # Add Alpha strain from October 2020; n_imports, rel_beta and rel_severe_beta from calibration
     b117 = cv.variant('b117', days=np.arange(sim.day('2020-10-20'), sim.day('2020-10-30')), n_imports=3000)
     b117.p['rel_beta']        = 1.8
-    #b117.p['rel_symp_prob']   = 1.1
     b117.p['rel_severe_prob'] = 0.4
-    #b117.p['rel_crit_prob']   = 1.7
-    #b117.p['rel_death_prob']  = 0.6
-    #b117.p['rel_severe_prob'] = 0.7
-    #b117.p['rel_crit_prob']   = 1.0
-    #b117.p['rel_death_prob']  = 1.0
     sim['variants'] += [b117]
-    # Add B.1.1351 strain from Janury 2021
-    #b1351 = cv.variant('b1351', days=np.arange(sim.day('2021-01-10'), sim.day('2021-01-20')), n_imports=1500)
-    #b1351.p['rel_beta']        = 1.0
-    #b1351.p['rel_severe_prob'] = 1.0
-    #b1351.p['rel_crit_prob']   = 1.0
-    #b1351.p['rel_death_prob']  = 1.0
-    #sim['variants'] += [b1351]
-    # Add B.X.XXX strain starting middle of March
+    
+    # Add Delta strain starting middle of April 2021; n_imports, rel_beta and rel_severe_beta from calibration
     b16172 = cv.variant('b16172', days=np.arange(sim.day('2021-04-15'), sim.day('2021-04-20')), n_imports=4000)
     b16172.p['rel_beta']         = 2.9
-    #b16172.p['rel_symp_prob']    = 0.9
     b16172.p['rel_severe_prob']  = 0.2
-    #b16172.p['rel_crit_prob']    = 0.1
-    #b16172.p['rel_death_prob']   = 0.2
-    #b16172.p['rel_severe_prob'] = 0.7
-    #b16172.p['rel_crit_prob']   = 1.0
-    #b16172.p['rel_death_prob']  = 0.7
     sim['variants'] += [b16172]
     
     interventions = [h_beta, w_beta, s_beta, c_beta]
@@ -324,7 +303,6 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
     s_prob_june = 0.04769
     s_prob_july = 0.04769
     s_prob_august = 0.04769
-    # tn = 0.09
     s_prob_sep = 0.07769
     s_prob_oct = 0.07769
     s_prob_nov = 0.07769
@@ -359,7 +337,7 @@ def make_sim(seed, beta, calibration=True, future_symp_test=None, scenario=None,
      #isolation december
     iso_vals5 = [{k:0.5 for k in 'hswc'}]
     #isolation March 2021
-    ####chnaged to 0.2 for fitting
+    ####changed to 0.2 for fitting
     iso_vals6 = [{k:0.5 for k in 'hswc'}]
     #isolation from 20 June 2021 reduced
     iso_vals7 = [{k:0.7 for k in 'hswc'}]
@@ -476,7 +454,7 @@ if __name__ == '__main__':
 
     # Quick calibration
     if whattorun=='quickfit':
-        s0 = make_sim(seed=1, beta=0.0079, end_day='2021-07-30', verbose=0.1, vx_scenario=1)
+        s0 = make_sim(seed=1, beta=0.0079, end_day='2021-08-31', verbose=0.1, vx_scenario=1)
         sims = []
         for seed in range(30):
             sim = s0.copy()
@@ -505,7 +483,6 @@ if __name__ == '__main__':
         #scenarios = ['Roadmap_All', 'Roadmap_Stage2', 'Roadmap_Stage3']
         #scenarios = ['Roadmap_All', 'Roadmap_Stage3']
         scenarios = ['Roadmap_All']
-        #scenarios = ['FNL', 'fullPNL', 'primaryPNL']
         vx_scenarios = [0,1,2] # Should match vx_scens above to run all scenarios
         T = sc.tic()
         for scenname in scenarios:
